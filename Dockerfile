@@ -12,15 +12,24 @@ RUN npm install
 # Copy application files
 COPY . .
 
-# Create images directory for volume mount with proper permissions
-RUN mkdir -p /app/images && \
-    chown -R node:node /app/images && \
-    chmod -R 755 /app/images
+# Create images directory for volume mount
+RUN mkdir -p /app/images
 
-# Create data directory for uploads
-RUN mkdir -p /app/data && \
-    chown -R node:node /app/data && \
-    chmod -R 755 /app/data
+# Create data directory for uploads  
+RUN mkdir -p /app/data
+
+# Create entrypoint script to fix permissions
+RUN cat > entrypoint.sh << 'EOF'
+#!/bin/sh
+# Fix permissions on mounted volumes
+chmod -R 777 /app/images 2>/dev/null || true
+chmod -R 777 /app/data 2>/dev/null || true
+
+# Start the application
+exec node server.js
+EOF
+
+RUN chmod +x entrypoint.sh
 
 # Create a simple Express server to serve the app
 RUN cat > server.js << 'EOF'
@@ -191,5 +200,5 @@ EOF
 # Expose port
 EXPOSE 3000
 
-# Start the server
-CMD ["node", "server.js"]
+# Use entrypoint script to fix permissions
+ENTRYPOINT ["./entrypoint.sh"]
