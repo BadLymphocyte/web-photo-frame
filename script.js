@@ -24,8 +24,8 @@ class PictureSlideshow {
         this.initializeElements();
         this.attachEventListeners();
         this.initializeJXL();
-        this.loadStoredImages();
         this.loadSettings();
+        this.loadImagesFromServer();
         this.updateUI();
         
         // Start in fullscreen if requested
@@ -230,35 +230,79 @@ class PictureSlideshow {
     }
 
     async handleFileUpload(files) {
-        const imagePromises = Array.from(files).map(async (file) => {
-            if (this.isImageFile(file)) {
-                const imageData = await this.processImageFile(file);
-                if (imageData) {
-                    return {
-                        name: file.name,
-                        url: imageData.url,
-                        type: file.type,
-                        size: file.size
-                    };
+        try {
+            const formData = new FormData();
+            
+            // Add all files to FormData
+            Array.from(files).forEach(file => {
+                if (this.isImageFile(file)) {
+                    formData.append('images', file);
                 }
-            }
-            return null;
-        });
+            });
 
-        const newImages = (await Promise.all(imagePromises)).filter(img => img !== null);
-        
-        if (newImages.length > 0) {
-            this.images = [...this.images, ...newImages];
-            this.saveImagesToStorage();
+            // Upload to server
+            const response = await fetch('/api/upload', {
+                method: 'POST',
+                body: formData
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                // Refresh images list from server
+                await this.loadImagesFromServer();
+                this.showNotification(result.message, 'success');
+            } else {
+                this.showNotification(result.error || 'Upload failed', 'error');
+            }
+        } catch (error) {
+            console.error('Upload error:', error);
+            this.showNotification('Upload failed: ' + error.message, 'error');
+        }
+    }
+
+    async loadImagesFromServer() {
+        try {
+            const response = await fetch('/api/images');
+            const serverImages = await response.json();
+            
+            // Convert server images to client format
+            this.images = serverImages.map(img => ({
+                name: img.name,
+                url: `/images/${encodeURIComponent(img.name)}`,
+                type: img.type,
+                size: img.size
+            }));
+            
             this.updateUI();
             this.createThumbnails();
             
-            // Show first uploaded image
-            if (this.images.length === newImages.length) {
+            // Show first image if available
+            if (this.images.length > 0 && this.currentIndex >= this.images.length) {
                 this.currentIndex = 0;
                 this.showCurrentImage();
             }
+        } catch (error) {
+            console.error('Error loading images from server:', error);
         }
+    }
+
+    showNotification(message, type = 'info') {
+        // Create notification element
+        const notification = document.createElement('div');
+        notification.className = `fixed top-4 right-4 px-4 py-2 rounded-lg text-white z-50 transition-all duration-300 ${
+            type === 'success' ? 'bg-green-600' : 
+            type === 'error' ? 'bg-red-600' : 'bg-blue-600'
+        }`;
+        notification.textContent = message;
+        
+        document.body.appendChild(notification);
+        
+        // Auto remove after 3 seconds
+        setTimeout(() => {
+            notification.style.opacity = '0';
+            setTimeout(() => notification.remove(), 300);
+        }, 3000);
     }
 
     isImageFile(file) {

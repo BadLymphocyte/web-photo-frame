@@ -12,6 +12,7 @@ services:
       - NODE_ENV=production
     restart: unless-stopped
     container_name: picture-slideshow-app
+    user: "1000:1000"  # Run as non-root user with proper permissions
     networks:
       - slideshow-network
 

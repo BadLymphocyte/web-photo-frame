@@ -1,19 +1,5 @@
 FROM node:18-alpine
 
-# Install Chromium for Linux compatibility
-RUN apk add --no-cache \
-    chromium \
-    nss \
-    freetype \
-    freetype-dev \
-    harfbuzz \
-    ca-certificates \
-    ttf-freefont
-
-# Set Chromium environment variables
-ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
-    PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
-
 # Create app directory
 WORKDIR /app
 
@@ -26,20 +12,121 @@ RUN npm install
 # Copy application files
 COPY . .
 
-# Create images directory for volume mount
-RUN mkdir -p /app/images
+# Create images directory for volume mount with proper permissions
+RUN mkdir -p /app/images && \
+    chown -R node:node /app/images && \
+    chmod -R 755 /app/images
+
+# Create data directory for uploads
+RUN mkdir -p /app/data && \
+    chown -R node:node /app/data && \
+    chmod -R 755 /app/data
 
 # Create a simple Express server to serve the app
 RUN cat > server.js << 'EOF'
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
+const multer = require('multer');
 const app = express();
 const PORT = 3000;
+
+// Configure multer for file uploads
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, path.join(__dirname, 'images'));
+  },
+  filename: (req, file, cb) => {
+    // Keep original filename
+    cb(null, file.originalname);
+  }
+});
+
+const upload = multer({ 
+  storage: storage,
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/jxl'];
+    const allowedExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.jxl'];
+    
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (allowedTypes.includes(file.mimetype) && allowedExtensions.includes(ext)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Invalid file type. Only images are allowed.'), false);
+    }
+  },
+  limits: {
+    fileSize: 50 * 1024 * 1024 // 50MB limit
+  }
+});
 
 // Serve static files
 app.use(express.static(__dirname));
 app.use('/images', express.static(path.join(__dirname, 'images')));
+
+// Enable CORS for all routes
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  next();
+});
+
+// Handle preflight requests
+app.options('*', (req, res) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  res.send(200);
+});
+
+// Upload endpoint
+app.post('/api/upload', upload.array('images', 50), (req, res) => {
+  try {
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ error: 'No files uploaded' });
+    }
+    
+    const uploadedFiles = req.files.map(file => ({
+      name: file.originalname,
+      size: file.size,
+      type: file.mimetype,
+      path: `/images/${file.originalname}`
+    }));
+    
+    res.json({ 
+      success: true, 
+      message: `${req.files.length} files uploaded successfully`,
+      files: uploadedFiles 
+    });
+  } catch (error) {
+    console.error('Upload error:', error);
+    res.status(500).json({ error: 'Upload failed', details: error.message });
+  }
+});
+
+// Delete image endpoint
+app.delete('/api/images/:filename', (req, res) => {
+  try {
+    const filename = req.params.filename;
+    const filePath = path.join(__dirname, 'images', filename);
+    
+    // Security check - prevent directory traversal
+    if (filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
+      return res.status(400).json({ error: 'Invalid filename' });
+    }
+    
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+      res.json({ success: true, message: 'File deleted successfully' });
+    } else {
+      res.status(404).json({ error: 'File not found' });
+    }
+  } catch (error) {
+    console.error('Delete error:', error);
+    res.status(500).json({ error: 'Delete failed', details: error.message });
+  }
+});
 
 // API endpoint to list images in the images directory
 app.get('/api/images', (req, res) => {
