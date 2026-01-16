@@ -866,13 +866,6 @@ class PictureSlideshow {
                 lucide.createIcons();
             }
         }
-        
-        // Also update main play/pause button
-        const playIcon = this.elements.playPauseBtn?.querySelector('i');
-        if (playIcon) {
-            playIcon.setAttribute('data-lucide', this.isPlaying ? 'pause' : 'play');
-            lucide.createIcons();
-        }
     }
 
     updateFullscreenButton() {
