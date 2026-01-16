@@ -9,7 +9,7 @@ class PictureSlideshow {
         this.jxlDecoder = null;
         
         // Transition and effect settings
-        this.transitionType = 'none';
+        this.transitionType = 'fade';
         this.fadeDuration = 0.5;
         this.kenBurnsEnabled = false;
         this.kenBurnsType = 'zoom';
@@ -30,7 +30,7 @@ class PictureSlideshow {
         
         // Start in fullscreen if requested
         if (this.startInFullscreen) {
-            this.enterFullscreen();
+            setTimeout(() => this.enterFullscreen(), 500);
         }
     }
 
@@ -46,9 +46,9 @@ class PictureSlideshow {
             nextBtn: document.getElementById('nextBtn'),
             playPauseBtn: document.getElementById('playPauseBtn'),
             thumbnailContainer: document.getElementById('thumbnailContainer'),
-            speedSlider: document.getElementById('speedSlider'),
-            speedValue: document.getElementById('speedValue'),
-            loopCheckbox: document.getElementById('loopCheckbox'),
+            speedSliderFooter: document.querySelector('footer #speedSlider'),
+            speedValueFooter: document.querySelector('footer #speedValue'),
+            loopCheckboxFooter: document.querySelector('footer #loopCheckbox'),
             currentIndex: document.getElementById('currentIndex'),
             totalImages: document.getElementById('totalImages'),
             imageCounter: document.getElementById('imageCounter'),
@@ -63,6 +63,9 @@ class PictureSlideshow {
             kenBurnsType: document.getElementById('kenBurnsType'),
             kenBurnsDuration: document.getElementById('kenBurnsDuration'),
             kenBurnsDurationValue: document.getElementById('kenBurnsDurationValue'),
+            speedSliderSettings: document.getElementById('modalSpeedSlider'),
+            speedValueSettings: document.getElementById('modalSpeedValue'),
+            loopCheckboxSettings: document.getElementById('modalLoopCheckbox'),
             startFullscreenCheckbox: document.getElementById('startFullscreenCheckbox'),
             saveSettingsBtn: document.getElementById('saveSettingsBtn'),
             resetSettingsBtn: document.getElementById('resetSettingsBtn'),
@@ -92,18 +95,23 @@ class PictureSlideshow {
             this.togglePlayPause();
         });
 
-        this.elements.speedSlider.addEventListener('input', (e) => {
-            this.slideSpeed = e.target.value * 1000;
-            this.elements.speedValue.textContent = `${e.target.value}s`;
-            if (this.isPlaying) {
-                this.stopSlideshow();
-                this.startSlideshow();
-            }
-        });
+        // Footer controls
+        if (this.elements.speedSliderFooter) {
+            this.elements.speedSliderFooter.addEventListener('input', (e) => {
+                this.slideSpeed = e.target.value * 1000;
+                this.elements.speedValueFooter.textContent = `${e.target.value}s`;
+                if (this.isPlaying) {
+                    this.stopSlideshow();
+                    this.startSlideshow();
+                }
+            });
+        }
 
-        this.elements.loopCheckbox.addEventListener('change', (e) => {
-            this.loop = e.target.checked;
-        });
+        if (this.elements.loopCheckboxFooter) {
+            this.elements.loopCheckboxFooter.addEventListener('change', (e) => {
+                this.loop = e.target.checked;
+            });
+        }
 
         // Settings modal event listeners
         this.elements.settingsBtn.addEventListener('click', () => {
@@ -148,6 +156,34 @@ class PictureSlideshow {
             this.updateCSSVariables();
         });
 
+        // Settings modal speed slider
+        if (this.elements.speedSliderSettings) {
+            this.elements.speedSliderSettings.addEventListener('input', (e) => {
+                this.slideSpeed = e.target.value * 1000;
+                this.elements.speedValueSettings.textContent = `${e.target.value}s`;
+                // Also update footer slider
+                if (this.elements.speedSliderFooter) {
+                    this.elements.speedSliderFooter.value = e.target.value;
+                    this.elements.speedValueFooter.textContent = `${e.target.value}s`;
+                }
+                if (this.isPlaying) {
+                    this.stopSlideshow();
+                    this.startSlideshow();
+                }
+            });
+        }
+
+        // Settings modal loop checkbox
+        if (this.elements.loopCheckboxSettings) {
+            this.elements.loopCheckboxSettings.addEventListener('change', (e) => {
+                this.loop = e.target.checked;
+                // Also update footer checkbox
+                if (this.elements.loopCheckboxFooter) {
+                    this.elements.loopCheckboxFooter.checked = e.target.checked;
+                }
+            });
+        }
+
         this.elements.startFullscreenCheckbox.addEventListener('change', (e) => {
             this.startInFullscreen = e.target.checked;
         });
@@ -174,6 +210,14 @@ class PictureSlideshow {
 
         // Keyboard navigation
         document.addEventListener('keydown', (e) => {
+            // Don't handle if settings modal is open
+            if (this.elements.settingsModal.classList.contains('active')) {
+                if (e.key === 'Escape') {
+                    this.closeSettingsModal();
+                }
+                return;
+            }
+
             switch(e.key) {
                 case 'ArrowLeft':
                     this.previousImage();
@@ -192,9 +236,6 @@ class PictureSlideshow {
                 case 'Escape':
                     if (this.isFullscreen) {
                         this.exitFullscreen();
-                    }
-                    if (this.elements.settingsModal.classList.contains('active')) {
-                        this.closeSettingsModal();
                     }
                     break;
             }
@@ -220,7 +261,6 @@ class PictureSlideshow {
 
     async initializeJXL() {
         try {
-            // Initialize JXL decoder
             if (typeof JxlWasm !== 'undefined') {
                 this.jxlDecoder = await JxlWasm();
             }
@@ -231,42 +271,22 @@ class PictureSlideshow {
 
     async handleFileUpload(files) {
         try {
-            console.log('Starting upload for', files.length, 'files');
-            
             const formData = new FormData();
             
-            // Add all files to FormData
             Array.from(files).forEach(file => {
                 if (this.isImageFile(file)) {
-                    console.log('Adding file:', file.name, file.type, file.size);
                     formData.append('images', file);
                 }
             });
 
-            // Upload to server
             const response = await fetch('/api/upload', {
                 method: 'POST',
                 body: formData
             });
 
-            console.log('Response status:', response.status);
-            console.log('Response headers:', response.headers);
-
-            const responseText = await response.text();
-            console.log('Raw response:', responseText);
-
-            let result;
-            try {
-                result = JSON.parse(responseText);
-            } catch (parseError) {
-                console.error('JSON parse error:', parseError);
-                console.error('Response text was:', responseText);
-                this.showNotification('Invalid server response', 'error');
-                return;
-            }
+            const result = await response.json();
 
             if (result.success) {
-                // Refresh images list from server
                 await this.loadImagesFromServer();
                 this.showNotification(result.message, 'success');
             } else {
@@ -274,7 +294,6 @@ class PictureSlideshow {
             }
         } catch (error) {
             console.error('Upload error:', error);
-            console.error('Error stack:', error.stack);
             this.showNotification('Upload failed: ' + error.message, 'error');
         }
     }
@@ -284,9 +303,6 @@ class PictureSlideshow {
             const response = await fetch('/api/images');
             const serverImages = await response.json();
             
-            console.log('Loaded images from server:', serverImages.length);
-            
-            // Convert server images to client format
             this.images = serverImages.map(img => ({
                 name: img.name,
                 url: `/images/${encodeURIComponent(img.name)}`,
@@ -294,12 +310,9 @@ class PictureSlideshow {
                 size: img.size
             }));
             
-            console.log('Processed images:', this.images.length);
-            
             this.updateUI();
             this.createThumbnails();
             
-            // Show first image if available and no image is currently showing
             if (this.images.length > 0) {
                 if (this.currentIndex >= this.images.length || this.elements.currentImage.classList.contains('hidden')) {
                     this.currentIndex = 0;
@@ -312,7 +325,6 @@ class PictureSlideshow {
     }
 
     showNotification(message, type = 'info') {
-        // Create notification element
         const notification = document.createElement('div');
         notification.className = `fixed top-4 right-4 px-4 py-2 rounded-lg text-white z-50 transition-all duration-300 ${
             type === 'success' ? 'bg-green-600' : 
@@ -322,7 +334,6 @@ class PictureSlideshow {
         
         document.body.appendChild(notification);
         
-        // Auto remove after 3 seconds
         setTimeout(() => {
             notification.style.opacity = '0';
             setTimeout(() => notification.remove(), 300);
@@ -332,41 +343,6 @@ class PictureSlideshow {
     isImageFile(file) {
         const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/jxl'];
         return validTypes.includes(file.type) || file.name.toLowerCase().endsWith('.jxl');
-    }
-
-    async processImageFile(file) {
-        if (file.type === 'image/jxl' || file.name.toLowerCase().endsWith('.jxl')) {
-            return await this.processJXLFile(file);
-        } else {
-            return this.processRegularImageFile(file);
-        }
-    }
-
-    async processJXLFile(file) {
-        if (!this.jxlDecoder) {
-            console.error('JXL decoder not available');
-            return null;
-        }
-
-        try {
-            const arrayBuffer = await file.arrayBuffer();
-            const uint8Array = new Uint8Array(arrayBuffer);
-            const imageData = this.jxlDecoder.decode(uint8Array);
-            
-            // Create blob from decoded image data
-            const blob = new Blob([imageData], { type: 'image/png' });
-            const url = URL.createObjectURL(blob);
-            
-            return { url };
-        } catch (error) {
-            console.error('Error processing JXL file:', error);
-            return null;
-        }
-    }
-
-    processRegularImageFile(file) {
-        const url = URL.createObjectURL(file);
-        return { url };
     }
 
     createThumbnails() {
@@ -380,6 +356,7 @@ class PictureSlideshow {
             `;
             
             thumbnail.addEventListener('click', () => {
+                if (this.isTransitioning) return;
                 this.currentIndex = index;
                 this.showCurrentImage();
                 this.updateThumbnailSelection();
@@ -401,15 +378,9 @@ class PictureSlideshow {
     }
 
     showCurrentImage() {
-        if (this.images.length === 0) return;
+        if (this.images.length === 0 || this.isTransitioning) return;
 
         const currentImage = this.images[this.currentIndex];
-        console.log('Showing image:', currentImage.name, 'Transition type:', this.transitionType);
-        
-        if (this.isTransitioning) {
-            console.log('Already transitioning, skipping');
-            return;
-        }
         
         this.isTransitioning = true;
         
@@ -423,17 +394,17 @@ class PictureSlideshow {
             this.elements.controls.classList.remove('hidden');
             this.elements.imageCounter.classList.remove('hidden');
             this.isTransitioning = false;
+            this.applyKenBurnsEffect();
         }
         
         this.elements.currentIndex.textContent = this.currentIndex + 1;
         this.elements.totalImages.textContent = this.images.length;
         
         this.updateThumbnailSelection();
-        this.applyKenBurnsEffect();
     }
 
     previousImage() {
-        if (this.images.length === 0) return;
+        if (this.images.length === 0 || this.isTransitioning) return;
         
         this.currentIndex = this.currentIndex === 0 
             ? this.loop ? this.images.length - 1 : 0
@@ -443,19 +414,12 @@ class PictureSlideshow {
     }
 
     nextImage() {
-        if (this.images.length === 0) return;
-        
-        // Skip if we're already transitioning
-        if (this.isTransitioning) {
-            console.log('Skipping nextImage - currently transitioning');
-            return;
-        }
+        if (this.images.length === 0 || this.isTransitioning) return;
         
         this.currentIndex = this.currentIndex === this.images.length - 1 
             ? this.loop ? 0 : this.images.length - 1
             : this.currentIndex + 1;
         
-        console.log('Moving to image:', this.currentIndex);
         this.showCurrentImage();
     }
 
@@ -477,14 +441,7 @@ class PictureSlideshow {
             lucide.createIcons();
         }
         
-        // Update minimal controls if in fullscreen
         this.updateMinimalPlayPauseButton();
-        
-        // Calculate effective display time (slide speed minus transition time)
-        const transitionTime = this.transitionType === 'none' ? 0 : (this.fadeDuration * 1000);
-        const effectiveDisplayTime = Math.max(1000, this.slideSpeed - transitionTime); // Minimum 1 second display
-        
-        console.log('Slide speed:', this.slideSpeed, 'Transition time:', transitionTime, 'Effective display time:', effectiveDisplayTime);
         
         this.slideInterval = setInterval(() => {
             this.nextImage();
@@ -499,7 +456,6 @@ class PictureSlideshow {
             lucide.createIcons();
         }
         
-        // Update minimal controls if in fullscreen
         this.updateMinimalPlayPauseButton();
         
         if (this.slideInterval) {
@@ -516,73 +472,27 @@ class PictureSlideshow {
             this.elements.imageCounter.classList.add('hidden');
             this.elements.thumbnailContainer.innerHTML = '<p class="text-gray-400 text-sm">No images uploaded</p>';
         } else {
-            // Hide no images message and show controls
             this.elements.noImagesMessage.classList.add('hidden');
             this.elements.controls.classList.remove('hidden');
             this.elements.imageCounter.classList.remove('hidden');
             
-            // Update counter
             this.elements.currentIndex.textContent = this.currentIndex + 1;
             this.elements.totalImages.textContent = this.images.length;
         }
     }
 
-    saveImagesToStorage() {
-        // In a real application, you might want to save to localStorage or a server
-        // For now, we'll just keep images in memory
-        localStorage.setItem('slideshowImages', JSON.stringify(this.images.map(img => ({
-            name: img.name,
-            type: img.type,
-            size: img.size
-        }))));
-    }
-
-    loadStoredImages() {
-        // Load image metadata from localStorage
-        const stored = localStorage.getItem('slideshowImages');
-        if (stored) {
-            try {
-                const imageData = JSON.parse(stored);
-                // Note: In a real app, you'd need to handle URL recreation
-                // For now, we'll start with empty images
-            } catch (error) {
-                console.error('Error loading stored images:', error);
-            }
-        }
-    }
-
-    // Method to load images from a directory (for server-side implementation)
-    async loadImagesFromDirectory(directoryPath) {
-        try {
-            const response = await fetch(`/api/images?dir=${encodeURIComponent(directoryPath)}`);
-            const images = await response.json();
-            
-            this.images = images.map(img => ({
-                name: img.name,
-                url: `/images/${encodeURIComponent(img.name)}`,
-                type: img.type,
-                size: img.size
-            }));
-            
-            this.updateUI();
-            this.createThumbnails();
-        } catch (error) {
-            console.error('Error loading images from directory:', error);
-        }
-    }
-
-    // Transition methods
+    // Transition methods - FIXED
     applyTransition(imageUrl) {
         const currentImg = this.elements.currentImage;
         const nextImg = this.elements.nextImage;
         
+        // Remove Ken Burns effect during transition
+        currentImg.classList.remove('ken-burns', 'ken-burns-pan');
+        nextImg.classList.remove('ken-burns', 'ken-burns-pan');
+        
         // Set up the next image
         nextImg.src = imageUrl;
         nextImg.classList.remove('hidden');
-        
-        // Remove any existing transition classes
-        currentImg.className = 'slideshow-image';
-        nextImg.className = 'slideshow-image';
         
         // Apply transition based on type
         switch (this.transitionType) {
@@ -590,16 +500,10 @@ class PictureSlideshow {
                 this.applyFadeTransition(currentImg, nextImg);
                 break;
             case 'wipe-left':
-                this.applyWipeTransition(currentImg, nextImg, 'wipe-left');
-                break;
             case 'wipe-right':
-                this.applyWipeTransition(currentImg, nextImg, 'wipe-right');
-                break;
             case 'wipe-up':
-                this.applyWipeTransition(currentImg, nextImg, 'wipe-up');
-                break;
             case 'wipe-down':
-                this.applyWipeTransition(currentImg, nextImg, 'wipe-down');
+                this.applyWipeTransition(currentImg, nextImg, this.transitionType);
                 break;
             case 'cube':
                 this.applyCubeTransition(currentImg, nextImg);
@@ -610,177 +514,152 @@ class PictureSlideshow {
     }
 
     applyFadeTransition(currentImg, nextImg) {
-        console.log('Applying fade transition');
-        
-        // Store original transform
-        const originalTransform = currentImg.style.transform || 'translate(-50%, -50%)';
-        
-        // Reset both images but keep centering
-        currentImg.style.opacity = '1';
-        currentImg.style.transition = '';
-        currentImg.style.transform = originalTransform;
-        nextImg.style.opacity = '0';
-        nextImg.style.transition = '';
-        nextImg.style.transform = originalTransform;
+        // Reset both images to centered position
+        currentImg.style.cssText = 'opacity: 1; transition: none;';
+        nextImg.style.cssText = 'opacity: 0; transition: none;';
         
         // Show next image
         nextImg.classList.remove('hidden');
+        this.elements.noImagesMessage.classList.add('hidden');
         
         // Force reflow
-        nextImg.offsetHeight;
+        void nextImg.offsetHeight;
         
-        // Set up transition
-        nextImg.style.transition = `opacity ${this.fadeDuration}s ease-in-out`;
+        // Apply transitions
         currentImg.style.transition = `opacity ${this.fadeDuration}s ease-in-out`;
+        nextImg.style.transition = `opacity ${this.fadeDuration}s ease-in-out`;
         
-        // Start transition
-        nextImg.style.opacity = '1';
-        currentImg.style.opacity = '0';
+        // Start fade
+        requestAnimationFrame(() => {
+            currentImg.style.opacity = '0';
+            nextImg.style.opacity = '1';
+        });
         
         setTimeout(() => {
             // Clean up
-            currentImg.classList.add('hidden');
-            currentImg.style.opacity = '1';
-            currentImg.style.transition = '';
-            currentImg.style.transform = originalTransform;
+            currentImg.src = nextImg.src;
+            currentImg.style.cssText = '';
+            currentImg.classList.remove('hidden');
             
-            // Update main image source
-            this.elements.currentImage.src = nextImg.src;
-            
-            // Hide next image and reset
             nextImg.classList.add('hidden');
-            nextImg.style.opacity = '0';
-            nextImg.style.transition = '';
-            nextImg.style.transform = originalTransform;
+            nextImg.style.cssText = '';
+            
+            this.elements.controls.classList.remove('hidden');
+            this.elements.imageCounter.classList.remove('hidden');
             
             this.isTransitioning = false;
-            console.log('Fade transition complete');
+            this.applyKenBurnsEffect();
         }, this.fadeDuration * 1000);
     }
 
     applyWipeTransition(currentImg, nextImg, direction) {
-        console.log('Applying wipe transition:', direction);
+        const container = this.elements.currentImage.parentElement;
         
+        // Position images absolutely within container
+        currentImg.style.cssText = 'position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); transition: none; width: auto; max-width: 100%; max-height: 100%; z-index: 1;';
+        nextImg.style.cssText = 'position: absolute; top: 50%; left: 50%; width: auto; max-width: 100%; max-height: 100%; z-index: 2;';
+        
+        // Set initial position for next image based on direction
         const transforms = {
-            'wipe-left': ['translateX(100%)', 'translateX(0%)'],
-            'wipe-right': ['translateX(-100%)', 'translateX(0%)'],
-            'wipe-up': ['translateY(100%)', 'translateY(0%)'],
-            'wipe-down': ['translateY(-100%)', 'translateY(0%)']
+            'wipe-left': 'translate(50%, -50%)',
+            'wipe-right': 'translate(-150%, -50%)',
+            'wipe-up': 'translate(-50%, 50%)',
+            'wipe-down': 'translate(-50%, -150%)'
         };
         
-        const [startTransform, endTransform] = transforms[direction];
-        
-        // Store original centering
-        const centerTransform = 'translate(-50%, -50%)';
-        
-        // Reset both images
-        currentImg.style.transform = centerTransform;
-        currentImg.style.transition = '';
-        nextImg.style.transform = centerTransform + ' ' + startTransform;
-        nextImg.style.transition = '';
+        nextImg.style.transform = transforms[direction];
+        nextImg.style.transition = 'none';
         
         // Show next image
         nextImg.classList.remove('hidden');
+        this.elements.noImagesMessage.classList.add('hidden');
         
         // Force reflow
-        nextImg.offsetHeight;
+        void nextImg.offsetHeight;
         
-        // Set up transition
+        // Apply transition
         nextImg.style.transition = `transform ${this.fadeDuration}s ease-in-out`;
         
-        // Start transition
-        nextImg.style.transform = centerTransform + ' ' + endTransform;
+        // Start wipe
+        requestAnimationFrame(() => {
+            nextImg.style.transform = 'translate(-50%, -50%)';
+        });
         
         setTimeout(() => {
             // Clean up
-            currentImg.classList.add('hidden');
-            currentImg.style.transform = centerTransform;
-            currentImg.style.transition = '';
+            currentImg.src = nextImg.src;
+            currentImg.style.cssText = '';
+            currentImg.classList.remove('hidden');
             
-            // Update main image source
-            this.elements.currentImage.src = nextImg.src;
-            
-            // Hide next image and reset
             nextImg.classList.add('hidden');
-            nextImg.style.transform = centerTransform;
-            nextImg.style.transition = '';
+            nextImg.style.cssText = '';
+            
+            this.elements.controls.classList.remove('hidden');
+            this.elements.imageCounter.classList.remove('hidden');
             
             this.isTransitioning = false;
-            console.log('Wipe transition complete');
+            this.applyKenBurnsEffect();
         }, this.fadeDuration * 1000);
     }
 
     applyCubeTransition(currentImg, nextImg) {
-        console.log('Applying cube transition');
-        
-        const container = this.elements.imageContainer;
+        const container = this.elements.currentImage.parentElement;
         container.style.perspective = '1000px';
         
-        // Reset both images
-        currentImg.style.transform = '';
-        currentImg.style.transition = '';
-        currentImg.style.transformStyle = '';
-        nextImg.style.transform = '';
-        nextImg.style.transition = '';
-        nextImg.style.transformStyle = '';
+        // Setup 3D space
+        currentImg.style.cssText = 'position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotateY(0deg); transform-style: preserve-3d; transition: none; width: auto; max-width: 100%; max-height: 100%; z-index: 1;';
+        nextImg.style.cssText = 'position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotateY(-90deg); transform-style: preserve-3d; transition: none; width: auto; max-width: 100%; max-height: 100%; z-index: 2;';
         
-        // Set up 3D
-        currentImg.style.transformStyle = 'preserve-3d';
-        nextImg.style.transformStyle = 'preserve-3d';
-        
-        // Position next image
-        nextImg.style.transform = 'rotateY(-90deg)';
+        // Show next image
         nextImg.classList.remove('hidden');
+        this.elements.noImagesMessage.classList.add('hidden');
         
         // Force reflow
-        nextImg.offsetHeight;
+        void nextImg.offsetHeight;
         
-        // Set up transitions
+        // Apply transitions
         currentImg.style.transition = `transform ${this.fadeDuration}s ease-in-out`;
         nextImg.style.transition = `transform ${this.fadeDuration}s ease-in-out`;
         
-        // Start transition
-        currentImg.style.transform = 'rotateY(90deg)';
-        nextImg.style.transform = 'rotateY(0deg)';
+        // Start rotation
+        requestAnimationFrame(() => {
+            currentImg.style.transform = 'translate(-50%, -50%) rotateY(90deg)';
+            nextImg.style.transform = 'translate(-50%, -50%) rotateY(0deg)';
+        });
         
         setTimeout(() => {
             // Clean up
-            currentImg.classList.add('hidden');
-            currentImg.style.transform = '';
-            currentImg.style.transition = '';
-            currentImg.style.transformStyle = '';
+            currentImg.src = nextImg.src;
+            currentImg.style.cssText = '';
+            currentImg.classList.remove('hidden');
             
-            // Update main image source
-            this.elements.currentImage.src = nextImg.src;
-            
-            // Hide next image and reset
             nextImg.classList.add('hidden');
-            nextImg.style.transform = '';
-            nextImg.style.transition = '';
-            nextImg.style.transformStyle = '';
+            nextImg.style.cssText = '';
             
-            // Reset container
             container.style.perspective = '';
             
+            this.elements.controls.classList.remove('hidden');
+            this.elements.imageCounter.classList.remove('hidden');
+            
             this.isTransitioning = false;
-            console.log('Cube transition complete');
+            this.applyKenBurnsEffect();
         }, this.fadeDuration * 1000);
     }
 
     applyDirectTransition(currentImg, nextImg) {
-        this.elements.currentImage.src = nextImg.src;
+        currentImg.src = nextImg.src;
         nextImg.classList.add('hidden');
         this.isTransitioning = false;
+        this.applyKenBurnsEffect();
     }
 
     // Ken Burns effect methods
     applyKenBurnsEffect() {
         const currentImg = this.elements.currentImage;
         
-        // Remove existing Ken Burns classes
         currentImg.classList.remove('ken-burns', 'ken-burns-pan');
         
-        if (this.kenBurnsEnabled && !currentImg.classList.contains('hidden')) {
+        if (this.kenBurnsEnabled && !currentImg.classList.contains('hidden') && !this.isTransitioning) {
             if (this.kenBurnsType === 'zoom') {
                 currentImg.classList.add('ken-burns');
             } else if (this.kenBurnsType === 'pan') {
@@ -808,7 +687,6 @@ class PictureSlideshow {
             elem.msRequestFullscreen();
         }
         
-        // Hide UI elements for image-only fullscreen
         this.hideUIForFullscreen();
     }
 
@@ -821,12 +699,10 @@ class PictureSlideshow {
             document.msExitFullscreen();
         }
         
-        // Show UI elements when exiting fullscreen
         this.showUIForFullscreen();
     }
 
     hideUIForFullscreen() {
-        // Hide header, footer, sidebar, and controls
         const header = document.querySelector('header');
         const footer = document.querySelector('footer');
         const sidebar = document.querySelector('aside');
@@ -839,32 +715,21 @@ class PictureSlideshow {
         if (controls) controls.style.display = 'none';
         if (counter) counter.style.display = 'none';
         
-        // Make image container take full screen
         const imageContainer = document.getElementById('imageContainer');
         const mainSection = document.querySelector('main section');
         
         if (imageContainer) {
-            imageContainer.style.height = '100vh';
-            imageContainer.style.width = '100vw';
-            imageContainer.style.margin = '0';
-            imageContainer.style.padding = '0';
-            imageContainer.style.borderRadius = '0';
-            imageContainer.style.background = 'black';
+            imageContainer.style.cssText = 'height: 100vh; width: 100vw; margin: 0; padding: 0; border-radius: 0; background: black;';
         }
         
         if (mainSection) {
-            mainSection.style.margin = '0';
-            mainSection.style.padding = '0';
-            mainSection.style.borderRadius = '0';
-            mainSection.style.background = 'black';
+            mainSection.style.cssText = 'margin: 0; padding: 0; border-radius: 0; background: black;';
         }
         
-        // Add minimal floating controls that appear on hover
         this.createMinimalFullscreenControls();
     }
 
     showUIForFullscreen() {
-        // Restore all UI elements
         const header = document.querySelector('header');
         const footer = document.querySelector('footer');
         const sidebar = document.querySelector('aside');
@@ -877,32 +742,21 @@ class PictureSlideshow {
         if (controls) controls.style.display = '';
         if (counter) counter.style.display = '';
         
-        // Restore original styling
         const imageContainer = document.getElementById('imageContainer');
         const mainSection = document.querySelector('main section');
         
         if (imageContainer) {
-            imageContainer.style.height = '';
-            imageContainer.style.width = '';
-            imageContainer.style.margin = '';
-            imageContainer.style.padding = '';
-            imageContainer.style.borderRadius = '';
-            imageContainer.style.background = '';
+            imageContainer.style.cssText = '';
         }
         
         if (mainSection) {
-            mainSection.style.margin = '';
-            mainSection.style.padding = '';
-            mainSection.style.borderRadius = '';
-            mainSection.style.background = '';
+            mainSection.style.cssText = '';
         }
         
-        // Remove minimal controls
         this.removeMinimalFullscreenControls();
     }
 
     createMinimalFullscreenControls() {
-        // Create floating controls for fullscreen mode
         const controlsDiv = document.createElement('div');
         controlsDiv.id = 'minimalFullscreenControls';
         controlsDiv.className = 'fixed top-4 right-4 flex items-center gap-2 bg-black bg-opacity-50 rounded-lg p-2 opacity-0 transition-opacity duration-300 z-50';
@@ -923,7 +777,7 @@ class PictureSlideshow {
         
         document.body.appendChild(controlsDiv);
         
-        // Add hover effect to show controls
+        let hideTimeout;
         const showControls = () => {
             controlsDiv.style.opacity = '1';
         };
@@ -932,27 +786,20 @@ class PictureSlideshow {
             controlsDiv.style.opacity = '0';
         };
         
-        // Show controls on mouse movement
-        let hideTimeout;
         document.addEventListener('mousemove', () => {
             showControls();
             clearTimeout(hideTimeout);
             hideTimeout = setTimeout(hideControls, 3000);
         });
         
-        // Initial hide after 3 seconds
         hideTimeout = setTimeout(hideControls, 3000);
         
-        // Add event listeners to minimal controls
         document.getElementById('fsPrevBtn').addEventListener('click', () => this.previousImage());
         document.getElementById('fsPlayPauseBtn').addEventListener('click', () => this.togglePlayPause());
         document.getElementById('fsNextBtn').addEventListener('click', () => this.nextImage());
         document.getElementById('fsExitBtn').addEventListener('click', () => this.exitFullscreen());
         
-        // Update play/pause icon
         this.updateMinimalPlayPauseButton();
-        
-        // Re-initialize Lucide icons
         lucide.createIcons();
     }
 
@@ -968,11 +815,7 @@ class PictureSlideshow {
         if (fsPlayPauseBtn) {
             const icon = fsPlayPauseBtn.querySelector('i');
             if (icon) {
-                if (this.isPlaying) {
-                    icon.setAttribute('data-lucide', 'pause');
-                } else {
-                    icon.setAttribute('data-lucide', 'play');
-                }
+                icon.setAttribute('data-lucide', this.isPlaying ? 'pause' : 'play');
                 lucide.createIcons();
             }
         }
@@ -984,10 +827,10 @@ class PictureSlideshow {
         const icon = this.elements.fullscreenBtn.querySelector('i');
         if (this.isFullscreen) {
             if (icon) icon.setAttribute('data-lucide', 'minimize');
-            this.elements.fullscreenBtn.innerHTML = '<i data-lucide="minimize" class="w-4 h-4"></i> Exit Fullscreen';
+            this.elements.fullscreenBtn.innerHTML = '<i data-lucide="minimize"></i> Exit Fullscreen';
         } else {
             if (icon) icon.setAttribute('data-lucide', 'maximize');
-            this.elements.fullscreenBtn.innerHTML = '<i data-lucide="maximize" class="w-4 h-4"></i> Fullscreen';
+            this.elements.fullscreenBtn.innerHTML = '<i data-lucide="maximize"></i> Fullscreen';
         }
         lucide.createIcons();
     }
@@ -1013,6 +856,15 @@ class PictureSlideshow {
         this.elements.kenBurnsType.disabled = !this.kenBurnsEnabled;
         this.elements.kenBurnsDuration.disabled = !this.kenBurnsEnabled;
         this.elements.startFullscreenCheckbox.checked = this.startInFullscreen;
+        
+        // Update settings modal sliders
+        if (this.elements.speedSliderSettings) {
+            this.elements.speedSliderSettings.value = this.slideSpeed / 1000;
+            this.elements.speedValueSettings.textContent = `${this.slideSpeed / 1000}s`;
+        }
+        if (this.elements.loopCheckboxSettings) {
+            this.elements.loopCheckboxSettings.checked = this.loop;
+        }
     }
 
     saveSettings() {
@@ -1030,6 +882,7 @@ class PictureSlideshow {
         localStorage.setItem('slideshowSettings', JSON.stringify(settings));
         this.updateCSSVariables();
         this.applyKenBurnsEffect();
+        this.showNotification('Settings saved', 'success');
     }
 
     loadSettings() {
@@ -1046,10 +899,14 @@ class PictureSlideshow {
                 this.slideSpeed = settings.slideSpeed || 3000;
                 this.loop = settings.loop !== undefined ? settings.loop : true;
                 
-                // Update UI elements
-                this.elements.speedSlider.value = this.slideSpeed / 1000;
-                this.elements.speedValue.textContent = `${this.slideSpeed / 1000}s`;
-                this.elements.loopCheckbox.checked = this.loop;
+                // Update all UI elements
+                if (this.elements.speedSliderFooter) {
+                    this.elements.speedSliderFooter.value = this.slideSpeed / 1000;
+                    this.elements.speedValueFooter.textContent = `${this.slideSpeed / 1000}s`;
+                }
+                if (this.elements.loopCheckboxFooter) {
+                    this.elements.loopCheckboxFooter.checked = this.loop;
+                }
                 
                 this.updateCSSVariables();
             } catch (error) {
@@ -1065,10 +922,21 @@ class PictureSlideshow {
         this.kenBurnsType = 'zoom';
         this.kenBurnsDuration = 10;
         this.startInFullscreen = false;
+        this.slideSpeed = 3000;
+        this.loop = true;
         
         this.loadSettingsToForm();
         this.saveSettings();
         this.applyKenBurnsEffect();
+        
+        // Update footer elements
+        if (this.elements.speedSliderFooter) {
+            this.elements.speedSliderFooter.value = 3;
+            this.elements.speedValueFooter.textContent = '3s';
+        }
+        if (this.elements.loopCheckboxFooter) {
+            this.elements.loopCheckboxFooter.checked = true;
+        }
     }
 
     updateCSSVariables() {
@@ -1076,7 +944,6 @@ class PictureSlideshow {
         document.documentElement.style.setProperty('--ken-burns-duration', `${this.kenBurnsDuration}s`);
     }
 
-    // URL parameter methods
     checkURLParameters() {
         const urlParams = new URLSearchParams(window.location.search);
         const fullscreenParam = urlParams.get('fullscreen');
@@ -1089,10 +956,7 @@ class PictureSlideshow {
 
 // Initialize the slideshow when the page loads
 document.addEventListener('DOMContentLoaded', () => {
-    // Initialize Lucide icons
     lucide.createIcons();
-    
-    // Create slideshow instance
     window.slideshow = new PictureSlideshow();
 });
 
