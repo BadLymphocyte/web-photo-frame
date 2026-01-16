@@ -284,6 +284,8 @@ class PictureSlideshow {
             const response = await fetch('/api/images');
             const serverImages = await response.json();
             
+            console.log('Loaded images from server:', serverImages.length);
+            
             // Convert server images to client format
             this.images = serverImages.map(img => ({
                 name: img.name,
@@ -292,13 +294,17 @@ class PictureSlideshow {
                 size: img.size
             }));
             
+            console.log('Processed images:', this.images.length);
+            
             this.updateUI();
             this.createThumbnails();
             
-            // Show first image if available
-            if (this.images.length > 0 && this.currentIndex >= this.images.length) {
-                this.currentIndex = 0;
-                this.showCurrentImage();
+            // Show first image if available and no image is currently showing
+            if (this.images.length > 0) {
+                if (this.currentIndex >= this.images.length || this.elements.currentImage.classList.contains('hidden')) {
+                    this.currentIndex = 0;
+                    this.showCurrentImage();
+                }
             }
         } catch (error) {
             console.error('Error loading images from server:', error);
@@ -491,8 +497,14 @@ class PictureSlideshow {
             this.elements.imageCounter.classList.add('hidden');
             this.elements.thumbnailContainer.innerHTML = '<p class="text-gray-400 text-sm">No images uploaded</p>';
         } else {
-            this.showCurrentImage();
-            this.createThumbnails();
+            // Hide no images message and show controls
+            this.elements.noImagesMessage.classList.add('hidden');
+            this.elements.controls.classList.remove('hidden');
+            this.elements.imageCounter.classList.remove('hidden');
+            
+            // Update counter
+            this.elements.currentIndex.textContent = this.currentIndex + 1;
+            this.elements.totalImages.textContent = this.images.length;
         }
     }
 
