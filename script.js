@@ -610,81 +610,160 @@ class PictureSlideshow {
     }
 
     applyFadeTransition(currentImg, nextImg) {
+        console.log('Applying fade transition');
+        
+        // Store original transform
+        const originalTransform = currentImg.style.transform || 'translate(-50%, -50%)';
+        
+        // Reset both images but keep centering
+        currentImg.style.opacity = '1';
+        currentImg.style.transition = '';
+        currentImg.style.transform = originalTransform;
         nextImg.style.opacity = '0';
+        nextImg.style.transition = '';
+        nextImg.style.transform = originalTransform;
+        
+        // Show next image
+        nextImg.classList.remove('hidden');
+        
+        // Force reflow
+        nextImg.offsetHeight;
+        
+        // Set up transition
         nextImg.style.transition = `opacity ${this.fadeDuration}s ease-in-out`;
+        currentImg.style.transition = `opacity ${this.fadeDuration}s ease-in-out`;
         
-        nextImg.offsetHeight; // Force reflow
-        
+        // Start transition
         nextImg.style.opacity = '1';
+        currentImg.style.opacity = '0';
         
         setTimeout(() => {
+            // Clean up
             currentImg.classList.add('hidden');
             currentImg.style.opacity = '1';
             currentImg.style.transition = '';
+            currentImg.style.transform = originalTransform;
+            
+            // Update main image source
             this.elements.currentImage.src = nextImg.src;
+            
+            // Hide next image and reset
             nextImg.classList.add('hidden');
+            nextImg.style.opacity = '0';
+            nextImg.style.transition = '';
+            nextImg.style.transform = originalTransform;
+            
             this.isTransitioning = false;
+            console.log('Fade transition complete');
         }, this.fadeDuration * 1000);
     }
 
     applyWipeTransition(currentImg, nextImg, direction) {
+        console.log('Applying wipe transition:', direction);
+        
         const transforms = {
-            'wipe-left': ['translateX(100%)', 'translateX(0)'],
-            'wipe-right': ['translateX(-100%)', 'translateX(0)'],
-            'wipe-up': ['translateY(100%)', 'translateY(0)'],
-            'wipe-down': ['translateY(-100%)', 'translateY(0)']
+            'wipe-left': ['translateX(100%)', 'translateX(0%)'],
+            'wipe-right': ['translateX(-100%)', 'translateX(0%)'],
+            'wipe-up': ['translateY(100%)', 'translateY(0%)'],
+            'wipe-down': ['translateY(-100%)', 'translateY(0%)']
         };
         
         const [startTransform, endTransform] = transforms[direction];
         
-        nextImg.style.transform = startTransform;
+        // Store original centering
+        const centerTransform = 'translate(-50%, -50%)';
+        
+        // Reset both images
+        currentImg.style.transform = centerTransform;
+        currentImg.style.transition = '';
+        nextImg.style.transform = centerTransform + ' ' + startTransform;
+        nextImg.style.transition = '';
+        
+        // Show next image
+        nextImg.classList.remove('hidden');
+        
+        // Force reflow
+        nextImg.offsetHeight;
+        
+        // Set up transition
         nextImg.style.transition = `transform ${this.fadeDuration}s ease-in-out`;
         
-        nextImg.offsetHeight; // Force reflow
-        
-        nextImg.style.transform = endTransform;
+        // Start transition
+        nextImg.style.transform = centerTransform + ' ' + endTransform;
         
         setTimeout(() => {
+            // Clean up
             currentImg.classList.add('hidden');
-            currentImg.style.transform = '';
+            currentImg.style.transform = centerTransform;
             currentImg.style.transition = '';
+            
+            // Update main image source
             this.elements.currentImage.src = nextImg.src;
+            
+            // Hide next image and reset
             nextImg.classList.add('hidden');
-            nextImg.style.transform = '';
+            nextImg.style.transform = centerTransform;
             nextImg.style.transition = '';
+            
             this.isTransitioning = false;
+            console.log('Wipe transition complete');
         }, this.fadeDuration * 1000);
     }
 
     applyCubeTransition(currentImg, nextImg) {
+        console.log('Applying cube transition');
+        
         const container = this.elements.imageContainer;
         container.style.perspective = '1000px';
         
-        currentImg.style.transition = `transform ${this.fadeDuration}s ease-in-out`;
-        currentImg.style.transformStyle = 'preserve-3d';
+        // Reset both images
+        currentImg.style.transform = '';
+        currentImg.style.transition = '';
+        currentImg.style.transformStyle = '';
+        nextImg.style.transform = '';
+        nextImg.style.transition = '';
+        nextImg.style.transformStyle = '';
         
-        nextImg.style.transform = 'rotateY(-90deg)';
-        nextImg.style.transition = `transform ${this.fadeDuration}s ease-in-out`;
+        // Set up 3D
+        currentImg.style.transformStyle = 'preserve-3d';
         nextImg.style.transformStyle = 'preserve-3d';
+        
+        // Position next image
+        nextImg.style.transform = 'rotateY(-90deg)';
         nextImg.classList.remove('hidden');
         
-        nextImg.offsetHeight; // Force reflow
+        // Force reflow
+        nextImg.offsetHeight;
         
+        // Set up transitions
+        currentImg.style.transition = `transform ${this.fadeDuration}s ease-in-out`;
+        nextImg.style.transition = `transform ${this.fadeDuration}s ease-in-out`;
+        
+        // Start transition
         currentImg.style.transform = 'rotateY(90deg)';
         nextImg.style.transform = 'rotateY(0deg)';
         
         setTimeout(() => {
+            // Clean up
             currentImg.classList.add('hidden');
             currentImg.style.transform = '';
             currentImg.style.transition = '';
             currentImg.style.transformStyle = '';
+            
+            // Update main image source
             this.elements.currentImage.src = nextImg.src;
+            
+            // Hide next image and reset
             nextImg.classList.add('hidden');
             nextImg.style.transform = '';
             nextImg.style.transition = '';
             nextImg.style.transformStyle = '';
+            
+            // Reset container
             container.style.perspective = '';
+            
             this.isTransitioning = false;
+            console.log('Cube transition complete');
         }, this.fadeDuration * 1000);
     }
 
