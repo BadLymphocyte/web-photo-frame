@@ -9,7 +9,7 @@ class PictureSlideshow {
         this.jxlDecoder = null;
         
         // Transition and effect settings
-        this.transitionType = 'fade';
+        this.transitionType = 'none';
         this.fadeDuration = 0.5;
         this.kenBurnsEnabled = false;
         this.kenBurnsType = 'zoom';
@@ -404,8 +404,10 @@ class PictureSlideshow {
         if (this.images.length === 0) return;
 
         const currentImage = this.images[this.currentIndex];
+        console.log('Showing image:', currentImage.name, 'Transition type:', this.transitionType);
         
         if (this.isTransitioning) {
+            console.log('Already transitioning, skipping');
             return;
         }
         
@@ -443,10 +445,17 @@ class PictureSlideshow {
     nextImage() {
         if (this.images.length === 0) return;
         
+        // Skip if we're already transitioning
+        if (this.isTransitioning) {
+            console.log('Skipping nextImage - currently transitioning');
+            return;
+        }
+        
         this.currentIndex = this.currentIndex === this.images.length - 1 
             ? this.loop ? 0 : this.images.length - 1
             : this.currentIndex + 1;
         
+        console.log('Moving to image:', this.currentIndex);
         this.showCurrentImage();
     }
 
@@ -470,6 +479,12 @@ class PictureSlideshow {
         
         // Update minimal controls if in fullscreen
         this.updateMinimalPlayPauseButton();
+        
+        // Calculate effective display time (slide speed minus transition time)
+        const transitionTime = this.transitionType === 'none' ? 0 : (this.fadeDuration * 1000);
+        const effectiveDisplayTime = Math.max(1000, this.slideSpeed - transitionTime); // Minimum 1 second display
+        
+        console.log('Slide speed:', this.slideSpeed, 'Transition time:', transitionTime, 'Effective display time:', effectiveDisplayTime);
         
         this.slideInterval = setInterval(() => {
             this.nextImage();
