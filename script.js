@@ -231,11 +231,14 @@ class PictureSlideshow {
 
     async handleFileUpload(files) {
         try {
+            console.log('Starting upload for', files.length, 'files');
+            
             const formData = new FormData();
             
             // Add all files to FormData
             Array.from(files).forEach(file => {
                 if (this.isImageFile(file)) {
+                    console.log('Adding file:', file.name, file.type, file.size);
                     formData.append('images', file);
                 }
             });
@@ -246,7 +249,21 @@ class PictureSlideshow {
                 body: formData
             });
 
-            const result = await response.json();
+            console.log('Response status:', response.status);
+            console.log('Response headers:', response.headers);
+
+            const responseText = await response.text();
+            console.log('Raw response:', responseText);
+
+            let result;
+            try {
+                result = JSON.parse(responseText);
+            } catch (parseError) {
+                console.error('JSON parse error:', parseError);
+                console.error('Response text was:', responseText);
+                this.showNotification('Invalid server response', 'error');
+                return;
+            }
 
             if (result.success) {
                 // Refresh images list from server
@@ -257,6 +274,7 @@ class PictureSlideshow {
             }
         } catch (error) {
             console.error('Upload error:', error);
+            console.error('Error stack:', error.stack);
             this.showNotification('Upload failed: ' + error.message, 'error');
         }
     }

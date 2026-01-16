@@ -83,7 +83,11 @@ app.options('*', (req, res) => {
 // Upload endpoint
 app.post('/api/upload', upload.array('images', 50), (req, res) => {
   try {
+    console.log('Upload request received');
+    console.log('Files:', req.files ? req.files.length : 'none');
+    
     if (!req.files || req.files.length === 0) {
+      console.log('No files in request');
       return res.status(400).json({ error: 'No files uploaded' });
     }
     
@@ -91,16 +95,22 @@ app.post('/api/upload', upload.array('images', 50), (req, res) => {
       name: file.originalname,
       size: file.size,
       type: file.mimetype,
-      path: `/images/${file.originalname}`
+      path: '/images/' + file.originalname
     }));
     
-    res.json({ 
+    console.log('Processed files:', uploadedFiles.length);
+    
+    const response = { 
       success: true, 
-      message: `${req.files.length} files uploaded successfully`,
+      message: req.files.length + ' files uploaded successfully',
       files: uploadedFiles 
-    });
+    };
+    
+    console.log('Sending response:', JSON.stringify(response, null, 2));
+    res.json(response);
   } catch (error) {
     console.error('Upload error:', error);
+    console.error('Stack:', error.stack);
     res.status(500).json({ error: 'Upload failed', details: error.message });
   }
 });
