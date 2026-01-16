@@ -876,34 +876,42 @@ class PictureSlideshow {
         this.loadSettingsToForm();
     }
 
-closeSettingsModal() {
-    this.elements.settingsModal.classList.remove('active');
-}
+    closeSettingsModal() {
+        this.elements.settingsModal.classList.remove('active');
+    }
 
-loadSettingsToForm() {
-    this.elements.transitionType.innerHTML = '';
-    this.elements.transitionType.selectedOptions = this.transitionTypes.map(type => {
-        const option = document.createElement('option');
-        option.value = type;
-        option.selected = this.transitionTypes.includes(type);
-        option.textContent = this.getTransitionDisplayName(type);
-        return option;
-    });
-    
-    this.elements.randomTransitions.checked = this.randomTransitions;
-    this.elements.fadeDuration.value = this.fadeDuration;
-    this.elements.fadeDurationValue.textContent = `${this.fadeDuration}s`;
-    this.elements.kenBurnsEnabled.checked = this.kenBurnsEnabled;
-    this.elements.kenBurnsType.disabled = !this.kenBurnsEnabled;
-    this.elements.kenBurnsDuration.value = this.kenBurnsDuration;
-    this.elements.kenBurnsDurationValue.textContent = `${this.kenBurnsDuration}s`;
-    this.elements.kenBurnsDuration.disabled = !this.kenBurnsEnabled;
-    this.elements.startFullscreenCheckbox.checked = this.startInFullscreen;
-    
-    // Update settings modal sliders
-    if (this.elements.speedSliderSettings) {
-        this.elements.speedSliderSettings.value = this.slideSpeed / 1000;
-        this.elements.speedValueSettings.textContent = `${this.slideSpeed / 1000}s`;
+    loadSettingsToForm() {
+        // Clear existing options but preserve them for multiple select
+        const existingOptions = Array.from(this.elements.transitionType.options || []);
+        
+        // Set options based on current transition types
+        this.transitionTypes.forEach(type => {
+            const existingOption = existingOptions.find(opt => opt.value === type);
+            if (existingOption) {
+                existingOption.selected = true;
+            } else {
+                const option = document.createElement('option');
+                option.value = type;
+                option.selected = this.transitionTypes.includes(type);
+                option.textContent = this.getTransitionDisplayName(type);
+                this.elements.transitionType.add(option);
+            }
+        });
+        
+        this.elements.randomTransitions.checked = this.randomTransitions;
+        this.elements.fadeDuration.value = this.fadeDuration;
+        this.elements.fadeDurationValue.textContent = `${this.fadeDuration}s`;
+        this.elements.kenBurnsEnabled.checked = this.kenBurnsEnabled;
+        this.elements.kenBurnsType.disabled = !this.kenBurnsEnabled;
+        this.elements.kenBurnsDuration.value = this.kenBurnsDuration;
+        this.elements.kenBurnsDurationValue.textContent = `${this.kenBurnsDuration}s`;
+        this.elements.kenBurnsDuration.disabled = !this.kenBurnsEnabled;
+        this.elements.startFullscreenCheckbox.checked = this.startInFullscreen;
+        
+        // Update settings modal sliders
+        if (this.elements.speedSliderSettings) {
+            this.elements.speedSliderSettings.value = this.slideSpeed / 1000;
+            this.elements.speedValueSettings.textContent = `${this.slideSpeed / 1000}s`;
         }
         if (this.elements.loopCheckboxSettings) {
             this.elements.loopCheckboxSettings.checked = this.loop;
