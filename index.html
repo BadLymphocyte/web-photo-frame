@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Picture Slideshow</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jxl-wasm@latest/dist/jxl-wasm.js"></script>
+    <style>
+        .slideshow-image {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        
+        .transition-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            perspective: 1000px;
+        }
+        
+        .fade-transition {
+            animation: fadeIn var(--fade-duration) ease-in-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .fade-out {
+            animation: fadeOut var(--fade-duration) ease-in-out;
+        }
+        
+        @keyframes fadeOut {
+            from { opacity: 1; }
+            to { opacity: 0; }
+        }
+        
+        .wipe-left {
+            animation: wipeLeft var(--fade-duration) ease-in-out;
+        }
+        
+        @keyframes wipeLeft {
+            from { transform: translateX(100%); }
+            to { transform: translateX(0); }
+        }
+        
+        .wipe-right {
+            animation: wipeRight var(--fade-duration) ease-in-out;
+        }
+        
+        @keyframes wipeRight {
+            from { transform: translateX(-100%); }
+            to { transform: translateX(0); }
+        }
+        
+        .wipe-up {
+            animation: wipeUp var(--fade-duration) ease-in-out;
+        }
+        
+        @keyframes wipeUp {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+        
+        .wipe-down {
+            animation: wipeDown var(--fade-duration) ease-in-out;
+        }
+        
+        @keyframes wipeDown {
+            from { transform: translateY(-100%); }
+            to { transform: translateY(0); }
+        }
+        
+        .cube-rotate {
+            animation: cubeRotate var(--fade-duration) ease-in-out;
+            transform-style: preserve-3d;
+        }
+        
+        @keyframes cubeRotate {
+            0% { transform: rotateY(0deg); }
+            100% { transform: rotateY(360deg); }
+        }
+        
+        .ken-burns {
+            animation: kenBurns var(--ken-burns-duration) ease-in-out infinite alternate;
+        }
+        
+        @keyframes kenBurns {
+            0% { 
+                transform: translate(-50%, -50%) scale(1);
+            }
+            100% { 
+                transform: translate(-50%, -50%) scale(1.2);
+            }
+        }
+        
+        .ken-burns-pan {
+            animation: kenBurnsPan var(--ken-burns-duration) ease-in-out infinite alternate;
+        }
+        
+        @keyframes kenBurnsPan {
+            0% { 
+                transform: translate(-50%, -50%) scale(1.1) translate(-10%, -10%);
+            }
+            100% { 
+                transform: translate(-50%, -50%) scale(1.1) translate(10%, 10%);
+            }
+        }
+        
+        .thumbnail {
+            transition: all 0.3s ease;
+        }
+        
+        .thumbnail:hover {
+            transform: scale(1.05);
+        }
+        
+        .thumbnail.active {
+            border: 4px solid rgb(59 130 246);
+        }
+        
+        .settings-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+        }
+        
+        .settings-modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        :root {
+            --fade-duration: 0.5s;
+            --ken-burns-duration: 10s;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white min-h-screen flex flex-col">
+    <!-- Header -->
+    <header class="bg-gray-800 shadow-lg p-4">
+        <div class="container mx-auto flex items-center justify-between">
+            <h1 class="text-2xl font-bold flex items-center gap-2">
+                <i data-lucide="image"></i>
+                Picture Slideshow
+            </h1>
+            <div class="flex items-center gap-4">
+                <button id="settingsBtn" class="bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded-lg flex items-center gap-2 transition-colors">
+                    <i data-lucide="settings"></i>
+                    Settings
+                </button>
+                <button id="fullscreenBtn" class="bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded-lg flex items-center gap-2 transition-colors">
+                    <i data-lucide="maximize"></i>
+                    Fullscreen
+                </button>
+                <button id="uploadBtn" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg flex items-center gap-2 transition-colors">
+                    <i data-lucide="upload"></i>
+                    Upload Images
+                </button>
+                <input type="file" id="fileInput" multiple accept="image/*,.jxl" class="hidden">
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-1 container mx-auto p-4 flex flex-col lg:flex-row gap-4">
+        <!-- Slideshow Area -->
+        <section class="flex-1 bg-gray-800 rounded-lg p-4 flex items-center justify-center relative">
+            <div id="imageContainer" class="relative w-full h-full flex items-center justify-center transition-container">
+                <div id="noImagesMessage" class="text-center text-gray-400">
+                    <i data-lucide="image-off" class="w-16 h-16 mx-auto mb-4"></i>
+                    <p class="text-lg">No images loaded</p>
+                    <p class="text-sm mt-2">Upload images to start the slideshow</p>
+                </div>
+                <img id="currentImage" class="slideshow-image hidden" alt="Slideshow image">
+                <img id="nextImage" class="slideshow-image hidden" alt="Next slideshow image">
+            </div>
+            
+            <!-- Navigation Controls -->
+            <div id="controls" class="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex items-center gap-4 bg-black bg-opacity-50 rounded-lg p-3 hidden">
+                <button id="prevBtn" class="p-2 hover:bg-white hover:bg-opacity-20 rounded transition-colors">
+                    <i data-lucide="chevron-left" class="w-6 h-6"></i>
+                </button>
+                <button id="playPauseBtn" class="p-2 hover:bg-white hover:bg-opacity-20 rounded transition-colors">
+                    <i data-lucide="play" class="w-6 h-6"></i>
+                </button>
+                <button id="nextBtn" class="p-2 hover:bg-white hover:bg-opacity-20 rounded transition-colors">
+                    <i data-lucide="chevron-right" class="w-6 h-6"></i>
+                </button>
+            </div>
+            
+            <!-- Image Counter -->
+            <div id="imageCounter" class="absolute top-4 right-4 bg-black bg-opacity-50 rounded-lg px-3 py-1 text-sm hidden">
+                <span id="currentIndex">1</span> / <span id="totalImages">1</span>
+            </div>
+        </section>
+
+        <!-- Thumbnails Sidebar -->
+        <aside class="lg:w-64 bg-gray-800 rounded-lg p-4">
+            <h2 class="text-lg font-semibold mb-4 flex items-center gap-2">
+                <i data-lucide="grid"></i>
+                Thumbnails
+            </h2>
+            <div id="thumbnailContainer" class="grid grid-cols-2 lg:grid-cols-1 gap-2 max-h-96 overflow-y-auto">
+                <!-- Thumbnails will be added here dynamically -->
+            </div>
+        </aside>
+    </main>
+
+    <!-- Settings Panel -->
+    <footer class="bg-gray-800 p-4">
+        <div class="container mx-auto">
+            <div class="flex flex-wrap items-center justify-between gap-4">
+                <div class="flex items-center gap-4">
+                    <label class="flex items-center gap-2">
+                        <span>Speed:</span>
+                        <input type="range" id="speedSlider" min="1" max="10" value="3" class="w-24">
+                        <span id="speedValue">3s</span>
+                    </label>
+                    <label class="flex items-center gap-2">
+                        <input type="checkbox" id="loopCheckbox" checked class="rounded">
+                        <span>Loop</span>
+                    </label>
+                </div>
+                <div class="flex items-center gap-2 text-sm text-gray-400">
+                    <i data-lucide="info" class="w-4 h-4"></i>
+                    <span>Supports JPG, PNG, GIF, WebP, and JXL formats</span>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="settings-modal">
+        <div class="bg-gray-800 rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-2xl font-bold flex items-center gap-2">
+                    <i data-lucide="settings"></i>
+                    Slideshow Settings
+                </h2>
+                <button id="closeSettingsBtn" class="p-2 hover:bg-gray-700 rounded-lg transition-colors">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+            
+            <div class="space-y-6">
+                <!-- Transition Settings -->
+                <div class="bg-gray-700 rounded-lg p-4">
+                    <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
+                        <i data-lucide="sparkles"></i>
+                        Transitions
+                    </h3>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Transition Type</label>
+                            <select id="transitionType" class="w-full bg-gray-600 rounded-lg px-3 py-2">
+                                <option value="none">None</option>
+                                <option value="fade">Fade</option>
+                                <option value="wipe-left">Wipe Left</option>
+                                <option value="wipe-right">Wipe Right</option>
+                                <option value="wipe-up">Wipe Up</option>
+                                <option value="wipe-down">Wipe Down</option>
+                                <option value="cube">Cube Rotate</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="flex items-center gap-2">
+                                <span>Transition Duration:</span>
+                                <input type="range" id="fadeDuration" min="0.1" max="2" step="0.1" value="0.5" class="flex-1">
+                                <span id="fadeDurationValue" class="w-12 text-right">0.5s</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Ken Burns Settings -->
+                <div class="bg-gray-700 rounded-lg p-4">
+                    <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
+                        <i data-lucide="camera"></i>
+                        Ken Burns Effect
+                    </h3>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="flex items-center gap-2">
+                                <input type="checkbox" id="kenBurnsEnabled" class="rounded">
+                                <span>Enable Ken Burns Effect</span>
+                            </label>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Effect Type</label>
+                            <select id="kenBurnsType" class="w-full bg-gray-600 rounded-lg px-3 py-2" disabled>
+                                <option value="zoom">Zoom In/Out</option>
+                                <option value="pan">Pan</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="flex items-center gap-2">
+                                <span>Effect Duration:</span>
+                                <input type="range" id="kenBurnsDuration" min="5" max="20" step="1" value="10" class="flex-1" disabled>
+                                <span id="kenBurnsDurationValue" class="w-12 text-right">10s</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Slideshow Settings -->
+                <div class="bg-gray-700 rounded-lg p-4">
+                    <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
+                        <i data-lucide="play-circle"></i>
+                        Slideshow
+                    </h3>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="flex items-center gap-2">
+                                <span>Display Speed:</span>
+                                <input type="range" id="speedSlider" min="1" max="10" value="3" class="flex-1">
+                                <span id="speedValue">3s</span>
+                            </label>
+                        </div>
+                        
+                        <div>
+                            <label class="flex items-center gap-2">
+                                <input type="checkbox" id="loopCheckbox" checked class="rounded">
+                                <span>Loop Slideshow</span>
+                            </label>
+                        </div>
+                        
+                        <div>
+                            <label class="flex items-center gap-2">
+                                <input type="checkbox" id="startFullscreenCheckbox" class="rounded">
+                                <span>Start in Fullscreen Mode</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex justify-end gap-3 mt-6">
+                <button id="resetSettingsBtn" class="px-4 py-2 bg-gray-600 hover:bg-gray-700 rounded-lg transition-colors">
+                    Reset to Defaults
+                </button>
+                <button id="saveSettingsBtn" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors">
+                    Save Settings
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

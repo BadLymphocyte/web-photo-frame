@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  picture-slideshow:
+    build: .
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./images:/app/images
+      - ./data:/app/data
+    environment:
+      - NODE_ENV=production
+    restart: unless-stopped
+    container_name: picture-slideshow-app
+    networks:
+      - slideshow-network
+
+networks:
+  slideshow-network:
+    driver: bridge
+
+volumes:
+  slideshow-images:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${PWD}/images

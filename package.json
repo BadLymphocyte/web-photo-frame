@@ -1,0 +1,21 @@
+{
+  "name": "picture-slideshow",
+  "version": "1.0.0",
+  "description": "A browser-based picture slideshow app with JXL support",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  },
+  "keywords": [
+    "slideshow",
+    "images",
+    "jxl",
+    "browser"
+  ],
+  "author": "",
+  "license": "MIT"
+}
