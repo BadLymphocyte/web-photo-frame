@@ -450,7 +450,9 @@ class PictureSlideshow {
             lucide.createIcons();
         }
         
+        // Update both main and minimal play/pause buttons
         this.updateMinimalPlayPauseButton();
+        this.updatePlayPauseButton();
         
         this.slideInterval = setInterval(() => {
             this.nextImage();
@@ -723,6 +725,7 @@ class PictureSlideshow {
         }
         
         this.hideUIForFullscreen();
+        this.centerFullscreenImage();
     }
 
     exitFullscreen() {
@@ -735,6 +738,15 @@ class PictureSlideshow {
         }
         
         this.showUIForFullscreen();
+    }
+
+    centerFullscreenImage() {
+        const currentImg = this.elements.currentImage;
+        const nextImg = this.elements.nextImage;
+        
+        // Center both images in fullscreen
+        currentImg.style.cssText = 'position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); max-width: 100vw; max-height: 100vh; object-fit: contain;';
+        nextImg.style.cssText = 'position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); max-width: 100vw; max-height: 100vh; object-fit: contain;';
     }
 
     hideUIForFullscreen() {
@@ -754,11 +766,11 @@ class PictureSlideshow {
         const mainSection = document.querySelector('main section');
         
         if (imageContainer) {
-            imageContainer.style.cssText = 'height: 100vh; width: 100vw; margin: 0; padding: 0; border-radius: 0; background: black;';
+            imageContainer.style.cssText = 'height: 100vh; width: 100vw; margin: 0; padding: 0; border-radius: 0; background: black; display: flex; align-items: center; justify-content: center;';
         }
         
         if (mainSection) {
-            mainSection.style.cssText = 'margin: 0; padding: 0; border-radius: 0; background: black;';
+            mainSection.style.cssText = 'margin: 0; padding: 0; border-radius: 0; background: black; height: 100vh;';
         }
         
         this.createMinimalFullscreenControls();
@@ -853,6 +865,13 @@ class PictureSlideshow {
                 icon.setAttribute('data-lucide', this.isPlaying ? 'pause' : 'play');
                 lucide.createIcons();
             }
+        }
+        
+        // Also update main play/pause button
+        const playIcon = this.elements.playPauseBtn?.querySelector('i');
+        if (playIcon) {
+            playIcon.setAttribute('data-lucide', this.isPlaying ? 'pause' : 'play');
+            lucide.createIcons();
         }
     }
 
