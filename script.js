@@ -462,9 +462,11 @@ class PictureSlideshow {
         if (this.images.length === 0) return;
         
         this.isPlaying = true;
-        const playIcon = this.elements.playPauseBtn.querySelector('i');
-        playIcon.setAttribute('data-lucide', 'pause');
-        lucide.createIcons();
+        const playIcon = this.elements.playPauseBtn?.querySelector('i');
+        if (playIcon) {
+            playIcon.setAttribute('data-lucide', 'pause');
+            lucide.createIcons();
+        }
         
         // Update minimal controls if in fullscreen
         this.updateMinimalPlayPauseButton();
@@ -476,9 +478,11 @@ class PictureSlideshow {
 
     stopSlideshow() {
         this.isPlaying = false;
-        const playIcon = this.elements.playPauseBtn.querySelector('i');
-        playIcon.setAttribute('data-lucide', 'play');
-        lucide.createIcons();
+        const playIcon = this.elements.playPauseBtn?.querySelector('i');
+        if (playIcon) {
+            playIcon.setAttribute('data-lucide', 'play');
+            lucide.createIcons();
+        }
         
         // Update minimal controls if in fullscreen
         this.updateMinimalPlayPauseButton();
@@ -869,22 +873,26 @@ class PictureSlideshow {
         const fsPlayPauseBtn = document.getElementById('fsPlayPauseBtn');
         if (fsPlayPauseBtn) {
             const icon = fsPlayPauseBtn.querySelector('i');
-            if (this.isPlaying) {
-                icon.setAttribute('data-lucide', 'pause');
-            } else {
-                icon.setAttribute('data-lucide', 'play');
+            if (icon) {
+                if (this.isPlaying) {
+                    icon.setAttribute('data-lucide', 'pause');
+                } else {
+                    icon.setAttribute('data-lucide', 'play');
+                }
+                lucide.createIcons();
             }
-            lucide.createIcons();
         }
     }
 
     updateFullscreenButton() {
+        if (!this.elements.fullscreenBtn) return;
+        
         const icon = this.elements.fullscreenBtn.querySelector('i');
         if (this.isFullscreen) {
-            icon.setAttribute('data-lucide', 'minimize');
+            if (icon) icon.setAttribute('data-lucide', 'minimize');
             this.elements.fullscreenBtn.innerHTML = '<i data-lucide="minimize" class="w-4 h-4"></i> Exit Fullscreen';
         } else {
-            icon.setAttribute('data-lucide', 'maximize');
+            if (icon) icon.setAttribute('data-lucide', 'maximize');
             this.elements.fullscreenBtn.innerHTML = '<i data-lucide="maximize" class="w-4 h-4"></i> Fullscreen';
         }
         lucide.createIcons();
