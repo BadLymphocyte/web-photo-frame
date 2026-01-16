@@ -1,3 +1,5 @@
+#IT'S ALL AI GENERATED. 
+
 # Picture Slideshow App
 
 A modern browser-based picture slideshow application with JXL (JPEG XL) support, designed to run in Linux containers with Chromium compatibility.
