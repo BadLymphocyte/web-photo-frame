@@ -1,4 +1,4 @@
-#IT'S ALL AI GENERATED. 
+# IT'S ALL AI GENERATED. 
 
 # Picture Slideshow App
 
