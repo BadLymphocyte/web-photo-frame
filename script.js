@@ -9,7 +9,9 @@ class PictureSlideshow {
         this.jxlDecoder = null;
         
         // Transition and effect settings
-        this.transitionType = 'fade';
+        this.transitionTypes = ['fade']; // Default to fade only
+        this.transitionType = 'fade'; // Current transition type
+        this.randomTransitions = false; // Whether to use random transitions
         this.fadeDuration = 0.5;
         this.kenBurnsEnabled = false;
         this.kenBurnsType = 'zoom';
@@ -129,8 +131,15 @@ class PictureSlideshow {
         });
 
         this.elements.transitionType.addEventListener('change', (e) => {
-            this.transitionType = e.target.value;
+            this.updateTransitionTypes(e.target.selectedOptions);
         });
+        
+        this.elements.randomTransitions = document.getElementById('randomTransitions');
+        if (this.elements.randomTransitions) {
+            this.elements.randomTransitions.addEventListener('change', (e) => {
+                this.randomTransitions = e.target.checked;
+            });
+        }
 
         this.elements.fadeDuration.addEventListener('input', (e) => {
             this.fadeDuration = parseFloat(e.target.value);
@@ -482,6 +491,31 @@ class PictureSlideshow {
     }
 
     // Transition methods - FIXED
+    updateTransitionTypes(selectedOptions) {
+        if (!selectedOptions) {
+            this.transitionTypes = ['none'];
+            this.randomTransitions = false;
+        } else {
+            this.transitionTypes = Array.from(selectedOptions).map(option => option.value);
+            this.randomTransitions = this.randomTransitions; // Keep existing random setting
+        }
+        
+        // If only one transition selected and it's not "none", disable random checkbox
+        if (this.elements.randomTransitions) {
+            this.elements.randomTransitions.disabled = this.transitionTypes.length <= 1;
+        }
+    }
+
+    getRandomTransition() {
+        if (this.randomTransitions && this.transitionTypes.length > 1) {
+            const availableTransitions = this.transitionTypes.filter(t => t !== 'none');
+            if (availableTransitions.length > 0) {
+                return availableTransitions[Math.floor(Math.random() * availableTransitions.length)];
+            }
+        }
+        return this.transitionType;
+    }
+
     applyTransition(imageUrl) {
         const currentImg = this.elements.currentImage;
         const nextImg = this.elements.nextImage;
@@ -495,7 +529,8 @@ class PictureSlideshow {
         nextImg.classList.remove('hidden');
         
         // Apply transition based on type
-        switch (this.transitionType) {
+        const transitionType = this.getRandomTransition();
+        switch (transitionType) {
             case 'fade':
                 this.applyFadeTransition(currentImg, nextImg);
                 break;
@@ -841,26 +876,34 @@ class PictureSlideshow {
         this.loadSettingsToForm();
     }
 
-    closeSettingsModal() {
-        this.elements.settingsModal.classList.remove('active');
-    }
+closeSettingsModal() {
+    this.elements.settingsModal.classList.remove('active');
+}
 
-    loadSettingsToForm() {
-        this.elements.transitionType.value = this.transitionType;
-        this.elements.fadeDuration.value = this.fadeDuration;
-        this.elements.fadeDurationValue.textContent = `${this.fadeDuration}s`;
-        this.elements.kenBurnsEnabled.checked = this.kenBurnsEnabled;
-        this.elements.kenBurnsType.value = this.kenBurnsType;
-        this.elements.kenBurnsDuration.value = this.kenBurnsDuration;
-        this.elements.kenBurnsDurationValue.textContent = `${this.kenBurnsDuration}s`;
-        this.elements.kenBurnsType.disabled = !this.kenBurnsEnabled;
-        this.elements.kenBurnsDuration.disabled = !this.kenBurnsEnabled;
-        this.elements.startFullscreenCheckbox.checked = this.startInFullscreen;
-        
-        // Update settings modal sliders
-        if (this.elements.speedSliderSettings) {
-            this.elements.speedSliderSettings.value = this.slideSpeed / 1000;
-            this.elements.speedValueSettings.textContent = `${this.slideSpeed / 1000}s`;
+loadSettingsToForm() {
+    this.elements.transitionType.innerHTML = '';
+    this.elements.transitionType.selectedOptions = this.transitionTypes.map(type => {
+        const option = document.createElement('option');
+        option.value = type;
+        option.selected = this.transitionTypes.includes(type);
+        option.textContent = this.getTransitionDisplayName(type);
+        return option;
+    });
+    
+    this.elements.randomTransitions.checked = this.randomTransitions;
+    this.elements.fadeDuration.value = this.fadeDuration;
+    this.elements.fadeDurationValue.textContent = `${this.fadeDuration}s`;
+    this.elements.kenBurnsEnabled.checked = this.kenBurnsEnabled;
+    this.elements.kenBurnsType.disabled = !this.kenBurnsEnabled;
+    this.elements.kenBurnsDuration.value = this.kenBurnsDuration;
+    this.elements.kenBurnsDurationValue.textContent = `${this.kenBurnsDuration}s`;
+    this.elements.kenBurnsDuration.disabled = !this.kenBurnsEnabled;
+    this.elements.startFullscreenCheckbox.checked = this.startInFullscreen;
+    
+    // Update settings modal sliders
+    if (this.elements.speedSliderSettings) {
+        this.elements.speedSliderSettings.value = this.slideSpeed / 1000;
+        this.elements.speedValueSettings.textContent = `${this.slideSpeed / 1000}s`;
         }
         if (this.elements.loopCheckboxSettings) {
             this.elements.loopCheckboxSettings.checked = this.loop;
