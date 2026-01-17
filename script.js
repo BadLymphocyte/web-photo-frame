@@ -9,9 +9,7 @@ class PictureSlideshow {
         this.jxlDecoder = null;
         
         // Transition and effect settings
-        this.transitionTypes = ['fade']; // Default to fade only
-        this.transitionType = 'fade'; // Current transition type
-        this.randomTransitions = false; // Whether to use random transitions
+        this.transitionType = 'fade';
         this.fadeDuration = 0.5;
         this.kenBurnsEnabled = false;
         this.kenBurnsType = 'zoom';
@@ -58,7 +56,8 @@ class PictureSlideshow {
             settingsBtn: document.getElementById('settingsBtn'),
             settingsModal: document.getElementById('settingsModal'),
             closeSettingsBtn: document.getElementById('closeSettingsBtn'),
-            transitionType: document.getElementById('transitionType'),
+            transitionCheckboxes: document.querySelectorAll('.transition-checkbox'),
+            randomTransitions: document.getElementById('randomTransitions'),
             fadeDuration: document.getElementById('fadeDuration'),
             fadeDurationValue: document.getElementById('fadeDurationValue'),
             kenBurnsEnabled: document.getElementById('kenBurnsEnabled'),
@@ -131,15 +130,8 @@ class PictureSlideshow {
         });
 
         this.elements.transitionType.addEventListener('change', (e) => {
-            this.updateTransitionTypes(e.target.selectedOptions);
+            this.transitionType = e.target.value;
         });
-        
-        this.elements.randomTransitions = document.getElementById('randomTransitions');
-        if (this.elements.randomTransitions) {
-            this.elements.randomTransitions.addEventListener('change', (e) => {
-                this.randomTransitions = e.target.checked;
-            });
-        }
 
         this.elements.fadeDuration.addEventListener('input', (e) => {
             this.fadeDuration = parseFloat(e.target.value);
@@ -450,9 +442,7 @@ class PictureSlideshow {
             lucide.createIcons();
         }
         
-        // Update both main and minimal play/pause buttons
         this.updateMinimalPlayPauseButton();
-        this.updatePlayPauseButton();
         
         this.slideInterval = setInterval(() => {
             this.nextImage();
@@ -493,31 +483,6 @@ class PictureSlideshow {
     }
 
     // Transition methods - FIXED
-    updateTransitionTypes(selectedOptions) {
-        if (!selectedOptions) {
-            this.transitionTypes = ['none'];
-            this.randomTransitions = false;
-        } else {
-            this.transitionTypes = Array.from(selectedOptions).map(option => option.value);
-            this.randomTransitions = this.randomTransitions; // Keep existing random setting
-        }
-        
-        // If only one transition selected and it's not "none", disable random checkbox
-        if (this.elements.randomTransitions) {
-            this.elements.randomTransitions.disabled = this.transitionTypes.length <= 1;
-        }
-    }
-
-    getRandomTransition() {
-        if (this.randomTransitions && this.transitionTypes.length > 1) {
-            const availableTransitions = this.transitionTypes.filter(t => t !== 'none');
-            if (availableTransitions.length > 0) {
-                return availableTransitions[Math.floor(Math.random() * availableTransitions.length)];
-            }
-        }
-        return this.transitionType;
-    }
-
     applyTransition(imageUrl) {
         const currentImg = this.elements.currentImage;
         const nextImg = this.elements.nextImage;
@@ -531,8 +496,7 @@ class PictureSlideshow {
         nextImg.classList.remove('hidden');
         
         // Apply transition based on type
-        const transitionType = this.getRandomTransition();
-        switch (transitionType) {
+        switch (this.transitionType) {
             case 'fade':
                 this.applyFadeTransition(currentImg, nextImg);
                 break;
@@ -540,7 +504,7 @@ class PictureSlideshow {
             case 'wipe-right':
             case 'wipe-up':
             case 'wipe-down':
-                this.applyWipeTransition(currentImg, nextImg, this.transitionType);
+                this.applyWipeTransition(currentImg, nextImg, transitionType);
                 break;
             case 'cube':
                 this.applyCubeTransition(currentImg, nextImg);
@@ -725,7 +689,6 @@ class PictureSlideshow {
         }
         
         this.hideUIForFullscreen();
-        this.centerFullscreenImage();
     }
 
     exitFullscreen() {
@@ -737,16 +700,10 @@ class PictureSlideshow {
             document.msExitFullscreen();
         }
         
-        this.showUIForFullscreen();
-    }
-
-    centerFullscreenImage() {
-        const currentImg = this.elements.currentImage;
-        const nextImg = this.elements.nextImage;
-        
-        // Center both images in fullscreen
-        currentImg.style.cssText = 'position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); max-width: 100vw; max-height: 100vh; object-fit: contain;';
-        nextImg.style.cssText = 'position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); max-width: 100vw; max-height: 100vh; object-fit: contain;';
+        // Wait for fullscreen to exit before showing UI
+        setTimeout(() => {
+            this.showUIForFullscreen();
+        }, 100);
     }
 
     hideUIForFullscreen() {
@@ -766,11 +723,11 @@ class PictureSlideshow {
         const mainSection = document.querySelector('main section');
         
         if (imageContainer) {
-            imageContainer.style.cssText = 'height: 100vh; width: 100vw; margin: 0; padding: 0; border-radius: 0; background: black; display: flex; align-items: center; justify-content: center;';
+            imageContainer.style.cssText = 'height: 100vh; width: 100vw; margin: 0; padding: 0; border-radius: 0; background: black;';
         }
         
         if (mainSection) {
-            mainSection.style.cssText = 'margin: 0; padding: 0; border-radius: 0; background: black; height: 100vh;';
+            mainSection.style.cssText = 'margin: 0; padding: 0; border-radius: 0; background: black;';
         }
         
         this.createMinimalFullscreenControls();
@@ -786,11 +743,16 @@ class PictureSlideshow {
         if (header) header.style.display = '';
         if (footer) footer.style.display = '';
         if (sidebar) sidebar.style.display = '';
-        if (controls) controls.style.display = '';
-        if (counter) counter.style.display = '';
+        if (controls && this.images.length > 0) controls.style.display = '';
+        if (counter && this.images.length > 0) counter.style.display = '';
         
+        const main = document.querySelector('main');
         const imageContainer = document.getElementById('imageContainer');
         const mainSection = document.querySelector('main section');
+        
+        if (main) {
+            main.style.cssText = '';
+        }
         
         if (imageContainer) {
             imageContainer.style.cssText = '';
@@ -800,13 +762,30 @@ class PictureSlideshow {
             mainSection.style.cssText = '';
         }
         
+        // Reset image styles
+        const currentImg = this.elements.currentImage;
+        const nextImg = this.elements.nextImage;
+        if (currentImg) {
+            currentImg.style.position = '';
+            currentImg.style.maxWidth = '';
+            currentImg.style.maxHeight = '';
+        }
+        if (nextImg) {
+            nextImg.style.position = '';
+            nextImg.style.maxWidth = '';
+            nextImg.style.maxHeight = '';
+        }
+        
         this.removeMinimalFullscreenControls();
     }
 
     createMinimalFullscreenControls() {
+        // Remove existing controls if any
+        this.removeMinimalFullscreenControls();
+        
         const controlsDiv = document.createElement('div');
         controlsDiv.id = 'minimalFullscreenControls';
-        controlsDiv.className = 'fixed top-4 right-4 flex items-center gap-2 bg-black bg-opacity-50 rounded-lg p-2 opacity-0 transition-opacity duration-300 z-50';
+        controlsDiv.className = 'fixed top-4 right-4 flex items-center gap-2 bg-black bg-opacity-50 rounded-lg p-2 opacity-0 hover:opacity-100 transition-opacity duration-300 z-[9999]';
         controlsDiv.innerHTML = `
             <button id="fsPrevBtn" class="p-2 hover:bg-white hover:bg-opacity-20 rounded transition-colors">
                 <i data-lucide="chevron-left" class="w-5 h-5 text-white"></i>
@@ -825,21 +804,40 @@ class PictureSlideshow {
         document.body.appendChild(controlsDiv);
         
         let hideTimeout;
+        let mouseMoveListener;
+        
         const showControls = () => {
             controlsDiv.style.opacity = '1';
+            clearTimeout(hideTimeout);
+            hideTimeout = setTimeout(hideControls, 3000);
         };
         
         const hideControls = () => {
             controlsDiv.style.opacity = '0';
         };
         
-        document.addEventListener('mousemove', () => {
+        // Show controls on mouse movement
+        mouseMoveListener = () => {
             showControls();
+        };
+        
+        document.addEventListener('mousemove', mouseMoveListener);
+        
+        // Keep controls visible when hovering over them
+        controlsDiv.addEventListener('mouseenter', () => {
             clearTimeout(hideTimeout);
+            controlsDiv.style.opacity = '1';
+        });
+        
+        controlsDiv.addEventListener('mouseleave', () => {
             hideTimeout = setTimeout(hideControls, 3000);
         });
         
+        // Initial hide after 3 seconds
         hideTimeout = setTimeout(hideControls, 3000);
+        
+        // Store the listener so we can remove it later
+        this.fullscreenMouseMoveListener = mouseMoveListener;
         
         document.getElementById('fsPrevBtn').addEventListener('click', () => this.previousImage());
         document.getElementById('fsPlayPauseBtn').addEventListener('click', () => this.togglePlayPause());
@@ -854,6 +852,12 @@ class PictureSlideshow {
         const controlsDiv = document.getElementById('minimalFullscreenControls');
         if (controlsDiv) {
             controlsDiv.remove();
+        }
+        
+        // Remove the mousemove listener
+        if (this.fullscreenMouseMoveListener) {
+            document.removeEventListener('mousemove', this.fullscreenMouseMoveListener);
+            this.fullscreenMouseMoveListener = null;
         }
     }
 
@@ -893,30 +897,14 @@ class PictureSlideshow {
     }
 
     loadSettingsToForm() {
-        // Clear existing options but preserve them for multiple select
-        const existingOptions = Array.from(this.elements.transitionType.options || []);
-        
-        // Set options based on current transition types
-        this.transitionTypes.forEach(type => {
-            const existingOption = existingOptions.find(opt => opt.value === type);
-            if (existingOption) {
-                existingOption.selected = true;
-            } else {
-                const option = document.createElement('option');
-                option.value = type;
-                option.selected = this.transitionTypes.includes(type);
-                option.textContent = this.getTransitionDisplayName(type);
-                this.elements.transitionType.add(option);
-            }
-        });
-        
-        this.elements.randomTransitions.checked = this.randomTransitions;
+        this.elements.transitionType.value = this.transitionType;
         this.elements.fadeDuration.value = this.fadeDuration;
         this.elements.fadeDurationValue.textContent = `${this.fadeDuration}s`;
         this.elements.kenBurnsEnabled.checked = this.kenBurnsEnabled;
-        this.elements.kenBurnsType.disabled = !this.kenBurnsEnabled;
+        this.elements.kenBurnsType.value = this.kenBurnsType;
         this.elements.kenBurnsDuration.value = this.kenBurnsDuration;
         this.elements.kenBurnsDurationValue.textContent = `${this.kenBurnsDuration}s`;
+        this.elements.kenBurnsType.disabled = !this.kenBurnsEnabled;
         this.elements.kenBurnsDuration.disabled = !this.kenBurnsEnabled;
         this.elements.startFullscreenCheckbox.checked = this.startInFullscreen;
         
@@ -932,7 +920,9 @@ class PictureSlideshow {
 
     saveSettings() {
         const settings = {
+            transitionTypes: this.transitionTypes,
             transitionType: this.transitionType,
+            randomTransitions: this.randomTransitions,
             fadeDuration: this.fadeDuration,
             kenBurnsEnabled: this.kenBurnsEnabled,
             kenBurnsType: this.kenBurnsType,
@@ -953,7 +943,9 @@ class PictureSlideshow {
         if (stored) {
             try {
                 const settings = JSON.parse(stored);
+                this.transitionTypes = settings.transitionTypes || ['fade'];
                 this.transitionType = settings.transitionType || 'fade';
+                this.randomTransitions = settings.randomTransitions || false;
                 this.fadeDuration = settings.fadeDuration || 0.5;
                 this.kenBurnsEnabled = settings.kenBurnsEnabled || false;
                 this.kenBurnsType = settings.kenBurnsType || 'zoom';
@@ -979,7 +971,9 @@ class PictureSlideshow {
     }
 
     resetSettings() {
+        this.transitionTypes = ['fade'];
         this.transitionType = 'fade';
+        this.randomTransitions = false;
         this.fadeDuration = 0.5;
         this.kenBurnsEnabled = false;
         this.kenBurnsType = 'zoom';
