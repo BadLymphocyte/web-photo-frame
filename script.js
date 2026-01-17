@@ -475,11 +475,9 @@ class PictureSlideshow {
         const btn = this.elements.playPauseBtn;
         if (!btn) return;
         
-        const icon = btn.querySelector('i');
-        if (icon) {
-            icon.setAttribute('data-lucide', this.isPlaying ? 'pause' : 'play');
-            lucide.createIcons();
-        }
+        // Clear the button and recreate the icon
+        btn.innerHTML = `<i data-lucide="${this.isPlaying ? 'pause' : 'play'}" class="w-6 h-6"></i>`;
+        lucide.createIcons();
     }
 
     updateUI() {
