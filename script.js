@@ -754,23 +754,7 @@ class PictureSlideshow {
         }
     }
 
-    // Fullscreen methods
-    handleFullscreenChange() {
-        const fullscreenElement = document.fullscreenElement || 
-                                 document.webkitFullscreenElement || 
-                                 document.mozFullScreenElement ||
-                                 document.msFullscreenElement;
-        
-        this.isFullscreen = !!fullscreenElement;
-        this.updateFullscreenButton();
-        
-        if (this.isFullscreen) {
-            this.hideUIForFullscreen();
-        } else {
-            this.showUIForFullscreen();
-        }
-    }
-    
+    // Fullscreen methods - Simple implementation
     toggleFullscreen() {
         if (this.isFullscreen) {
             this.exitFullscreen();
@@ -788,199 +772,61 @@ class PictureSlideshow {
         } else if (elem.msRequestFullscreen) {
             elem.msRequestFullscreen();
         }
-        
-        this.hideUIForFullscreen();
     }
 
     exitFullscreen() {
-        const exitFS = document.exitFullscreen || document.webkitExitFullscreen || 
-                      document.mozCancelFullScreen || document.msExitFullscreen;
-        
-        if (exitFS) {
-            exitFS.call(document).catch(err => {
-                console.error('Error attempting to exit fullscreen:', err);
-            });
+        if (document.exitFullscreen) {
+            document.exitFullscreen();
+        } else if (document.webkitExitFullscreen) {
+            document.webkitExitFullscreen();
+        } else if (document.msExitFullscreen) {
+            document.msExitFullscreen();
         }
     }
 
-    hideUIForFullscreen() {
-        const header = document.querySelector('header');
-        const footer = document.querySelector('footer');
-        const sidebar = document.querySelector('aside');
-        const controls = document.getElementById('controls');
-        const counter = document.getElementById('imageCounter');
+    handleFullscreenChange() {
+        const isFullscreen = !!(document.fullscreenElement || 
+                               document.webkitFullscreenElement || 
+                               document.mozFullScreenElement ||
+                               document.msFullscreenElement);
         
-        if (header) header.style.display = 'none';
-        if (footer) footer.style.display = 'none';
-        if (sidebar) sidebar.style.display = 'none';
-        if (controls) controls.style.display = 'none';
-        if (counter) counter.style.display = 'none';
+        this.isFullscreen = isFullscreen;
         
-        const imageContainer = document.getElementById('imageContainer');
-        const mainSection = document.querySelector('main section');
-        
-        if (imageContainer) {
-            imageContainer.style.cssText = 'height: 100vh; width: 100vw; margin: 0; padding: 0; border-radius: 0; background: black; display: flex; align-items: center; justify-content: center;';
-        }
-        
-        if (mainSection) {
-            mainSection.style.cssText = 'margin: 0; padding: 0; border-radius: 0; background: black;';
-        }
-        
-        this.createMinimalFullscreenControls();
-    }
-
-    showUIForFullscreen() {
-        const header = document.querySelector('header');
-        const footer = document.querySelector('footer');
-        const sidebar = document.querySelector('aside');
-        const controls = document.getElementById('controls');
-        const counter = document.getElementById('imageCounter');
-        
-        if (header) header.style.display = '';
-        if (footer) footer.style.display = '';
-        if (sidebar) sidebar.style.display = '';
-        if (controls && this.images.length > 0) controls.style.display = '';
-        if (counter && this.images.length > 0) counter.style.display = '';
-        
-        const main = document.querySelector('main');
-        const imageContainer = document.getElementById('imageContainer');
-        const mainSection = document.querySelector('main section');
-        
-        if (main) {
-            main.style.cssText = '';
-        }
-        
-        if (imageContainer) {
-            imageContainer.style.cssText = '';
-        }
-        
-        if (mainSection) {
-            mainSection.style.cssText = '';
-        }
-        
-        // Reset image styles
-        const currentImg = this.elements.currentImage;
-        const nextImg = this.elements.nextImage;
-        if (currentImg) {
-            currentImg.style.position = '';
-            currentImg.style.maxWidth = '';
-            currentImg.style.maxHeight = '';
-        }
-        if (nextImg) {
-            nextImg.style.position = '';
-            nextImg.style.maxWidth = '';
-            nextImg.style.maxHeight = '';
-        }
-        
-        this.removeMinimalFullscreenControls();
-    }
-
-    createMinimalFullscreenControls() {
-        // Remove existing controls if any
-        this.removeMinimalFullscreenControls();
-        
-        const controlsDiv = document.createElement('div');
-        controlsDiv.id = 'minimalFullscreenControls';
-        controlsDiv.className = 'fixed top-4 right-4 flex items-center gap-2 bg-black bg-opacity-50 rounded-lg p-2 opacity-0 hover:opacity-100 transition-opacity duration-300 z-[9999]';
-        controlsDiv.innerHTML = `
-            <button id="fsPrevBtn" class="p-2 hover:bg-white hover:bg-opacity-20 rounded transition-colors">
-                <i data-lucide="chevron-left" class="w-5 h-5 text-white"></i>
-            </button>
-            <button id="fsPlayPauseBtn" class="p-2 hover:bg-white hover:bg-opacity-20 rounded transition-colors">
-                <i data-lucide="play" class="w-5 h-5 text-white"></i>
-            </button>
-            <button id="fsNextBtn" class="p-2 hover:bg-white hover:bg-opacity-20 rounded transition-colors">
-                <i data-lucide="chevron-right" class="w-5 h-5 text-white"></i>
-            </button>
-            <button id="fsExitBtn" class="p-2 hover:bg-white hover:bg-opacity-20 rounded transition-colors">
-                <i data-lucide="minimize" class="w-5 h-5 text-white"></i>
-            </button>
-        `;
-        
-        document.body.appendChild(controlsDiv);
-        
-        let hideTimeout;
-        let mouseMoveListener;
-        
-        const showControls = () => {
-            controlsDiv.style.opacity = '1';
-            clearTimeout(hideTimeout);
-            hideTimeout = setTimeout(hideControls, 3000);
-        };
-        
-        const hideControls = () => {
-            controlsDiv.style.opacity = '0';
-        };
-        
-        // Show controls on mouse movement
-        mouseMoveListener = () => {
-            showControls();
-        };
-        
-        document.addEventListener('mousemove', mouseMoveListener);
-        
-        // Keep controls visible when hovering over them
-        controlsDiv.addEventListener('mouseenter', () => {
-            clearTimeout(hideTimeout);
-            controlsDiv.style.opacity = '1';
-        });
-        
-        controlsDiv.addEventListener('mouseleave', () => {
-            hideTimeout = setTimeout(hideControls, 3000);
-        });
-        
-        // Initial hide after 3 seconds
-        hideTimeout = setTimeout(hideControls, 3000);
-        
-        // Store the listener so we can remove it later
-        this.fullscreenMouseMoveListener = mouseMoveListener;
-        
-        document.getElementById('fsPrevBtn').addEventListener('click', () => this.previousImage());
-        document.getElementById('fsPlayPauseBtn').addEventListener('click', () => this.togglePlayPause());
-        document.getElementById('fsNextBtn').addEventListener('click', () => this.nextImage());
-        document.getElementById('fsExitBtn').addEventListener('click', () => this.exitFullscreen());
-        
-        this.updateMinimalPlayPauseButton();
-        lucide.createIcons();
-    }
-
-    removeMinimalFullscreenControls() {
-        const controlsDiv = document.getElementById('minimalFullscreenControls');
-        if (controlsDiv) {
-            controlsDiv.remove();
-        }
-        
-        // Remove the mousemove listener
-        if (this.fullscreenMouseMoveListener) {
-            document.removeEventListener('mousemove', this.fullscreenMouseMoveListener);
-            this.fullscreenMouseMoveListener = null;
-        }
-    }
-
-    updateMinimalPlayPauseButton() {
-        const fsPlayPauseBtn = document.getElementById('fsPlayPauseBtn');
-        if (fsPlayPauseBtn) {
-            const icon = fsPlayPauseBtn.querySelector('i');
-            if (icon) {
-                icon.setAttribute('data-lucide', this.isPlaying ? 'pause' : 'play');
+        if (isFullscreen) {
+            // Hide all UI elements
+            document.querySelector('header').style.display = 'none';
+            document.querySelector('footer').style.display = 'none';
+            document.querySelector('aside').style.display = 'none';
+            document.querySelector('main').style.cssText = 'margin: 0; padding: 0;';
+            
+            // Make image container fill screen and center content
+            const container = document.getElementById('imageContainer');
+            container.style.cssText = 'position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: black; display: flex; align-items: center; justify-content: center; margin: 0; padding: 0;';
+            
+            // Update button
+            const btn = this.elements.fullscreenBtn;
+            if (btn) {
+                btn.innerHTML = '<i data-lucide="minimize"></i> Exit Fullscreen';
+                lucide.createIcons();
+            }
+        } else {
+            // Restore all UI elements
+            document.querySelector('header').style.display = '';
+            document.querySelector('footer').style.display = '';
+            document.querySelector('aside').style.display = '';
+            document.querySelector('main').style.cssText = '';
+            
+            // Reset image container
+            const container = document.getElementById('imageContainer');
+            container.style.cssText = '';
+            
+            // Update button
+            const btn = this.elements.fullscreenBtn;
+            if (btn) {
+                btn.innerHTML = '<i data-lucide="maximize"></i> Fullscreen';
                 lucide.createIcons();
             }
         }
-    }
-
-    updateFullscreenButton() {
-        if (!this.elements.fullscreenBtn) return;
-        
-        const icon = this.elements.fullscreenBtn.querySelector('i');
-        if (this.isFullscreen) {
-            if (icon) icon.setAttribute('data-lucide', 'minimize');
-            this.elements.fullscreenBtn.innerHTML = '<i data-lucide="minimize"></i> Exit Fullscreen';
-        } else {
-            if (icon) icon.setAttribute('data-lucide', 'maximize');
-            this.elements.fullscreenBtn.innerHTML = '<i data-lucide="maximize"></i> Fullscreen';
-        }
-        lucide.createIcons();
     }
 
     // Settings modal methods
