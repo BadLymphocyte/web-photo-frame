@@ -27,6 +27,16 @@
             transform: translate(-50%, -50%);
         }
         
+        body:fullscreen .slideshow-image,
+        body:-webkit-full-screen .slideshow-image,
+        body:-moz-full-screen .slideshow-image {
+            max-width: 100vw;
+            max-height: 100vh;
+            width: auto;
+            height: auto;
+            object-fit: contain;
+        }
+        
         .transition-container {
             position: relative;
             width: 100%;
@@ -216,12 +226,13 @@
                     
                     <div class="space-y-4">
                         <div>
-                            <label class="block text-sm font-medium mb-2">Transition Types (select one or more)</label>
+                            <div class="flex items-center justify-between mb-2">
+                                <label class="block text-sm font-medium">Transition Types (select one or more)</label>
+                                <button id="selectAllTransitions" class="text-xs bg-blue-600 hover:bg-blue-700 px-2 py-1 rounded transition-colors">
+                                    Select All
+                                </button>
+                            </div>
                             <div class="space-y-2 bg-gray-600 rounded-lg p-3">
-                                <label class="flex items-center gap-2 cursor-pointer hover:bg-gray-500 p-2 rounded">
-                                    <input type="checkbox" class="transition-checkbox rounded" value="none">
-                                    <span>None</span>
-                                </label>
                                 <label class="flex items-center gap-2 cursor-pointer hover:bg-gray-500 p-2 rounded">
                                     <input type="checkbox" class="transition-checkbox rounded" value="fade" checked>
                                     <span>Fade</span>
