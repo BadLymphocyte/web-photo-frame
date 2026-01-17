@@ -454,12 +454,7 @@ class PictureSlideshow {
         if (this.images.length === 0) return;
         
         this.isPlaying = true;
-        const playIcon = this.elements.playPauseBtn?.querySelector('i');
-        if (playIcon) {
-            playIcon.setAttribute('data-lucide', 'pause');
-            lucide.createIcons();
-            this.updateMinimalPlayPauseButton();
-        }
+        this.updatePlayPauseButton();
         
         this.slideInterval = setInterval(() => {
             this.nextImage();
@@ -468,17 +463,22 @@ class PictureSlideshow {
 
     stopSlideshow() {
         this.isPlaying = false;
-        const playIcon = this.elements.playPauseBtn?.querySelector('i');
-        if (playIcon) {
-            playIcon.setAttribute('data-lucide', 'play');
-            lucide.createIcons();
-        }
-        
-        this.updateMinimalPlayPauseButton();
+        this.updatePlayPauseButton();
         
         if (this.slideInterval) {
             clearInterval(this.slideInterval);
             this.slideInterval = null;
+        }
+    }
+
+    updatePlayPauseButton() {
+        const btn = this.elements.playPauseBtn;
+        if (!btn) return;
+        
+        const icon = btn.querySelector('i');
+        if (icon) {
+            icon.setAttribute('data-lucide', this.isPlaying ? 'pause' : 'play');
+            lucide.createIcons();
         }
     }
 
