@@ -1,18 +1,26 @@
-# IT'S ALL AI GENERATED. 
-
 # Picture Slideshow App
 
-A modern browser-based picture slideshow application with JXL (JPEG XL) support, designed to run in Linux containers with Chromium compatibility.
+A modern browser-based picture slideshow application with smooth transitions and advanced effects, designed to run in Docker containers.
 
 ## Features
 
 - **Modern UI**: Clean, responsive interface built with TailwindCSS
-- **JXL Support**: Full support for JPEG XL image format using jxl-wasm
-- **Multiple Formats**: Supports JPG, PNG, GIF, WebP, and JXL images
+- **Multiple Formats**: Supports JPG, PNG, GIF, WebP, and JXL (JPEG XL) images
+- **Smooth Transitions**: Multiple transition types including:
+  - Fade
+  - Wipe (Left, Right, Up, Down)
+  - Cube Rotate
+  - Random transitions option
 - **Slideshow Controls**: Play/pause, previous/next navigation
 - **Adjustable Speed**: Configurable slideshow timing (1-10 seconds)
 - **Thumbnail Navigation**: Visual thumbnail grid for quick image selection
-- **Keyboard Shortcuts**: Arrow keys for navigation, spacebar for play/pause
+- **Keyboard Shortcuts**: 
+  - Arrow keys for navigation
+  - Spacebar for play/pause
+  - F key for fullscreen
+  - Escape to exit fullscreen/close settings
+- **Ken Burns Effect**: Optional zoom and pan effects
+- **Fullscreen Mode**: Immersive viewing with auto-hiding controls
 - **Drag & Drop**: Support for dragging images directly into the app
 - **Loop Mode**: Optional looping of slideshow
 - **Docker Support**: Runs in Linux containers with volume persistence
@@ -72,12 +80,33 @@ A modern browser-based picture slideshow application with JXL (JPEG XL) support,
   - `←` Arrow: Previous image
   - `→` Arrow: Next image  
   - `Space`: Play/Pause slideshow
+  - `F`: Toggle fullscreen
+  - `Escape`: Exit fullscreen or close settings
 - **Thumbnails**: Click any thumbnail to jump to that image
 
-### Slideshow Settings
+### Settings
 
-- **Speed Control**: Adjust the slider to change display timing (1-10 seconds)
-- **Loop Mode**: Toggle the checkbox to enable/disable looping
+Access the settings modal to customize:
+
+- **Transitions**: Choose one or multiple transition types
+  - Enable random transitions to mix them up
+  - Adjust transition duration (0.1-2 seconds)
+- **Ken Burns Effect**: Add cinematic zoom or pan effects
+  - Zoom: Gradual zoom in/out
+  - Pan: Smooth panning motion
+  - Adjustable duration (5-20 seconds)
+- **Slideshow**: 
+  - Display speed (1-10 seconds per image)
+  - Loop mode on/off
+  - Start in fullscreen option
+
+### Fullscreen Mode
+
+- Click the fullscreen button or press `F` to enter fullscreen
+- Controls auto-hide after 3 seconds of no mouse movement
+- Move mouse to show controls again
+- Controls remain visible when hovering over them
+- Press `Escape` or click minimize to exit
 
 ## Supported Image Formats
 
@@ -85,7 +114,7 @@ A modern browser-based picture slideshow application with JXL (JPEG XL) support,
 - PNG (.png)
 - GIF (.gif)
 - WebP (.webp)
-- **JPEG XL (.jxl)** - Next-generation image format
+- **JPEG XL (.jxl)** - Next-generation image format with superior compression
 
 ## Project Structure
 
@@ -112,9 +141,8 @@ picture-slideshow/
 ### Container Specifications
 
 - **Base Image**: Node.js 18 Alpine
-- **Browser**: Chromium for Linux compatibility
 - **Server**: Express.js serving static files and API
-- **Platform**: Linux (compatible with Chromium)
+- **Platform**: Linux
 
 ## Development
 
@@ -140,16 +168,22 @@ The application is structured for easy extension:
 - **UI Components**: Modify `index.html` for layout changes
 - **Functionality**: Update `script.js` for new features
 - **Styling**: Adjust TailwindCSS classes in `index.html`
-- **Backend**: Modify server logic in `Dockerfile` (server.js section)
+- **Backend**: Server logic is in the Dockerfile
 
 ## Troubleshooting
 
 ### Common Issues
 
 1. **JXL Images Not Loading**
-   - Ensure jxl-wasm library loads properly
-   - Check browser console for errors
+   - Ensure @jsquash/jxl library loads properly
+   - Check browser console for decoder errors
    - Verify JXL files are valid
+   - JXL files are converted to PNG in-browser for display
+
+2. **Images Not Loading**
+   - Check that images are in supported formats (JPG, PNG, GIF, WebP)
+   - Verify file permissions
+   - Check browser console for errors
 
 2. **Docker Volume Issues**
    - Ensure `images/` directory exists
@@ -160,10 +194,15 @@ The application is structured for easy extension:
    - Change port mapping in docker-compose.yml
    - Ensure port 3000 is not in use
 
-4. **Chromium Compatibility**
-   - The app uses Chromium for Linux compatibility
-   - All modern browsers should work for viewing
-   - JXL support requires JavaScript/WASM capabilities
+4. **Fullscreen Not Working**
+   - Some browsers require user interaction before allowing fullscreen
+   - Check browser permissions for fullscreen
+   - Try a different browser (Chrome, Firefox recommended)
+
+5. **Transitions Not Smooth**
+   - Reduce transition duration in settings
+   - Check if Ken Burns effect is interfering
+   - Try different transition types
 
 ### Logs
 
@@ -171,6 +210,28 @@ Check container logs for debugging:
 ```bash
 docker-compose logs picture-slideshow
 ```
+
+## Browser Compatibility
+
+Tested and working on:
+- Chrome/Chromium 90+
+- Firefox 88+
+- Safari 14+
+- Edge 90+
+
+## Performance Tips
+
+- Use optimized images (not too large)
+- Disable Ken Burns effect for better performance on slower devices
+- Use faster transition speeds for smoother experience
+- Limit the number of images loaded at once
+
+## Known Limitations
+
+- JXL files are decoded in-browser and converted to PNG (requires JavaScript enabled)
+- JXL decoding may be slower than native formats
+- Browser storage APIs not available in the Claude.ai environment
+- Maximum file upload size depends on server configuration
 
 ## License
 
@@ -191,3 +252,21 @@ For issues and questions:
 - Review Docker logs
 - Verify browser compatibility
 - Ensure all dependencies are installed
+
+## Changelog
+
+### v1.1 (Current)
+- Fixed fullscreen display issues
+- Replaced multi-select with checkboxes for transitions
+- Added random transition support
+- Improved control auto-hiding in fullscreen
+- Fixed play/pause button state updates
+- Re-added JXL support using @jsquash/jxl library
+- Removed production warning for Tailwind CDN
+
+### v1.0
+- Initial release
+- Basic slideshow functionality
+- Multiple transition types
+- Ken Burns effects
+- Docker support

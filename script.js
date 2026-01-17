@@ -203,11 +203,11 @@ class PictureSlideshow {
             this.toggleFullscreen();
         });
 
-        // Fullscreen change event listener
-        document.addEventListener('fullscreenchange', () => {
-            this.isFullscreen = !!document.fullscreenElement;
-            this.updateFullscreenButton();
-        });
+        // Fullscreen change event listener - support all browsers
+        document.addEventListener('fullscreenchange', this.handleFullscreenChange.bind(this));
+        document.addEventListener('webkitfullscreenchange', this.handleFullscreenChange.bind(this));
+        document.addEventListener('mozfullscreenchange', this.handleFullscreenChange.bind(this));
+        document.addEventListener('MSFullscreenChange', this.handleFullscreenChange.bind(this));
 
         // Keyboard navigation
         document.addEventListener('keydown', (e) => {
@@ -261,12 +261,24 @@ class PictureSlideshow {
     }
 
     async initializeJXL() {
+        // Use @jsquash/jxl library for JXL decoding
         try {
-            if (typeof JxlWasm !== 'undefined') {
-                this.jxlDecoder = await JxlWasm();
+            if (typeof jsquash !== 'undefined' && jquash.jxl) {
+                this.jxlDecoder = jquash.jxl;
+                console.log('JXL decoder initialized successfully');
+            } else {
+                console.info('JXL decoder not available - checking for alternative...');
+                // Give it a moment to load
+                await new Promise(resolve => setTimeout(resolve, 500));
+                if (typeof jquash !== 'undefined' && jquash.jxl) {
+                    this.jxlDecoder = jquash.jxl;
+                    console.log('JXL decoder initialized successfully (delayed)');
+                } else {
+                    console.warn('JXL decoder not available after delay');
+                }
             }
         } catch (error) {
-            console.warn('JXL support not available:', error);
+            console.warn('Error initializing JXL decoder:', error.message);
         }
     }
 
@@ -343,7 +355,63 @@ class PictureSlideshow {
 
     isImageFile(file) {
         const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/jxl'];
-        return validTypes.includes(file.type) || file.name.toLowerCase().endsWith('.jxl');
+        const isJXL = file.name.toLowerCase().endsWith('.jxl') || file.type === 'image/jxl';
+        
+        if (isJXL) {
+            if (!this.jxlDecoder) {
+                console.warn('JXL file detected but decoder not available yet:', file.name);
+                // Allow it anyway - decoder might load later
+            }
+            return true;
+        }
+        
+        return validTypes.includes(file.type);
+    }
+
+    async processImageFile(file) {
+        if (file.type === 'image/jxl' || file.name.toLowerCase().endsWith('.jxl')) {
+            return await this.processJXLFile(file);
+        } else {
+            return this.processRegularImageFile(file);
+        }
+    }
+
+    async processJXLFile(file) {
+        if (!this.jxlDecoder) {
+            console.error('JXL decoder not available');
+            // Return regular file URL as fallback
+            return this.processRegularImageFile(file);
+        }
+
+        try {
+            const arrayBuffer = await file.arrayBuffer();
+            const uint8Array = new Uint8Array(arrayBuffer);
+            
+            // Decode JXL to ImageData using @jsquash/jxl
+            const imageData = await this.jxlDecoder.decode(uint8Array);
+            
+            // Convert ImageData to canvas and then to blob
+            const canvas = document.createElement('canvas');
+            canvas.width = imageData.width;
+            canvas.height = imageData.height;
+            const ctx = canvas.getContext('2d');
+            ctx.putImageData(imageData, 0, 0);
+            
+            // Convert canvas to blob
+            const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+            const url = URL.createObjectURL(blob);
+            
+            return { url };
+        } catch (error) {
+            console.error('Error processing JXL file:', error);
+            // Fallback to regular file URL
+            return this.processRegularImageFile(file);
+        }
+    }
+
+    processRegularImageFile(file) {
+        const url = URL.createObjectURL(file);
+        return { url };
     }
 
     createThumbnails() {
@@ -670,6 +738,22 @@ class PictureSlideshow {
     }
 
     // Fullscreen methods
+    handleFullscreenChange() {
+        const fullscreenElement = document.fullscreenElement || 
+                                 document.webkitFullscreenElement || 
+                                 document.mozFullScreenElement ||
+                                 document.msFullscreenElement;
+        
+        this.isFullscreen = !!fullscreenElement;
+        this.updateFullscreenButton();
+        
+        if (this.isFullscreen) {
+            this.hideUIForFullscreen();
+        } else {
+            this.showUIForFullscreen();
+        }
+    }
+    
     toggleFullscreen() {
         if (this.isFullscreen) {
             this.exitFullscreen();
@@ -692,18 +776,14 @@ class PictureSlideshow {
     }
 
     exitFullscreen() {
-        if (document.exitFullscreen) {
-            document.exitFullscreen();
-        } else if (document.webkitExitFullscreen) {
-            document.webkitExitFullscreen();
-        } else if (document.msExitFullscreen) {
-            document.msExitFullscreen();
-        }
+        const exitFS = document.exitFullscreen || document.webkitExitFullscreen || 
+                      document.mozCancelFullScreen || document.msExitFullscreen;
         
-        // Wait for fullscreen to exit before showing UI
-        setTimeout(() => {
-            this.showUIForFullscreen();
-        }, 100);
+        if (exitFS) {
+            exitFS.call(document).catch(err => {
+                console.error('Error attempting to exit fullscreen:', err);
+            });
+        }
     }
 
     hideUIForFullscreen() {
