@@ -93,6 +93,10 @@
             --fade-duration: 0.5s;
             --ken-burns-duration: 10s;
         }
+        
+        #controls {
+            transition: opacity 0.3s ease-in-out;
+        }
     </style>
 </head>
 <body class="bg-gray-900 text-white min-h-screen flex flex-col">
@@ -212,16 +216,37 @@
                     
                     <div class="space-y-4">
                         <div>
-                            <label class="block text-sm font-medium mb-2">Transition Type</label>
-                            <select id="transitionType" class="w-full bg-gray-600 rounded-lg px-3 py-2">
-                                <option value="none">None</option>
-                                <option value="fade" selected>Fade</option>
-                                <option value="wipe-left">Wipe Left</option>
-                                <option value="wipe-right">Wipe Right</option>
-                                <option value="wipe-up">Wipe Up</option>
-                                <option value="wipe-down">Wipe Down</option>
-                                <option value="cube">Cube Rotate</option>
-                            </select>
+                            <label class="block text-sm font-medium mb-2">Transition Types (select one or more)</label>
+                            <div class="space-y-2 bg-gray-600 rounded-lg p-3">
+                                <label class="flex items-center gap-2 cursor-pointer hover:bg-gray-500 p-2 rounded">
+                                    <input type="checkbox" class="transition-checkbox rounded" value="none">
+                                    <span>None</span>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer hover:bg-gray-500 p-2 rounded">
+                                    <input type="checkbox" class="transition-checkbox rounded" value="fade" checked>
+                                    <span>Fade</span>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer hover:bg-gray-500 p-2 rounded">
+                                    <input type="checkbox" class="transition-checkbox rounded" value="wipe-left">
+                                    <span>Wipe Left</span>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer hover:bg-gray-500 p-2 rounded">
+                                    <input type="checkbox" class="transition-checkbox rounded" value="wipe-right">
+                                    <span>Wipe Right</span>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer hover:bg-gray-500 p-2 rounded">
+                                    <input type="checkbox" class="transition-checkbox rounded" value="wipe-up">
+                                    <span>Wipe Up</span>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer hover:bg-gray-500 p-2 rounded">
+                                    <input type="checkbox" class="transition-checkbox rounded" value="wipe-down">
+                                    <span>Wipe Down</span>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer hover:bg-gray-500 p-2 rounded">
+                                    <input type="checkbox" class="transition-checkbox rounded" value="cube">
+                                    <span>Cube Rotate</span>
+                                </label>
+                            </div>
                         </div>
                         
                         <div>

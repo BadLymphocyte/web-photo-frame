@@ -132,8 +132,10 @@ class PictureSlideshow {
             }
         });
 
-        this.elements.transitionType.addEventListener('change', (e) => {
-            this.transitionType = e.target.value;
+        this.elements.transitionCheckboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', () => {
+                this.updateTransitionTypes();
+            });
         });
 
         this.elements.fadeDuration.addEventListener('input', (e) => {
@@ -261,6 +263,9 @@ class PictureSlideshow {
             dropZone.classList.remove('bg-gray-700');
             this.handleFileUpload(e.dataTransfer.files);
         });
+
+        // Auto-hide controls on main screen
+        this.setupAutoHideControls();
     }
 
     async initializeJXL() {
@@ -482,6 +487,69 @@ class PictureSlideshow {
         }
     }
 
+    // Helper methods for transition management
+    updateTransitionTypes() {
+        const checkedBoxes = Array.from(this.elements.transitionCheckboxes)
+            .filter(cb => cb.checked)
+            .map(cb => cb.value);
+        
+        if (checkedBoxes.length > 0) {
+            this.transitionTypes = checkedBoxes;
+            // Set current transition to first selected if current is not in list
+            if (!this.transitionTypes.includes(this.transitionType)) {
+                this.transitionType = this.transitionTypes[0];
+            }
+        } else {
+            // If nothing selected, default to 'none'
+            this.transitionTypes = ['none'];
+            this.transitionType = 'none';
+        }
+    }
+
+    getRandomTransition() {
+        if (this.transitionTypes.length === 1) {
+            return this.transitionTypes[0];
+        }
+        const randomIndex = Math.floor(Math.random() * this.transitionTypes.length);
+        return this.transitionTypes[randomIndex];
+    }
+
+    setupAutoHideControls() {
+        let hideTimeout;
+        const imageContainer = document.getElementById('imageContainer');
+        
+        const showControls = () => {
+            if (this.elements.controls && !this.isFullscreen) {
+                this.elements.controls.style.opacity = '1';
+                this.elements.controls.style.pointerEvents = 'auto';
+            }
+        };
+        
+        const hideControls = () => {
+            if (this.elements.controls && !this.isFullscreen) {
+                this.elements.controls.style.opacity = '0';
+                this.elements.controls.style.pointerEvents = 'none';
+            }
+        };
+        
+        // Show controls on mouse movement over image container
+        if (imageContainer) {
+            imageContainer.addEventListener('mousemove', () => {
+                showControls();
+                clearTimeout(hideTimeout);
+                hideTimeout = setTimeout(hideControls, 3000);
+            });
+            
+            imageContainer.addEventListener('mouseleave', () => {
+                clearTimeout(hideTimeout);
+                hideTimeout = setTimeout(hideControls, 1000);
+            });
+        }
+        
+        // Initially hide controls after 3 seconds
+        setTimeout(hideControls, 3000);
+    }
+
     // Transition methods - FIXED
     applyTransition(imageUrl) {
         const currentImg = this.elements.currentImage;
@@ -495,8 +563,13 @@ class PictureSlideshow {
         nextImg.src = imageUrl;
         nextImg.classList.remove('hidden');
         
+        // Get transition type (random if multiple selected)
+        const transitionType = this.transitionTypes.length > 1 
+            ? this.getRandomTransition() 
+            : this.transitionType;
+        
         // Apply transition based on type
-        switch (this.transitionType) {
+        switch (transitionType) {
             case 'fade':
                 this.applyFadeTransition(currentImg, nextImg);
                 break;
@@ -504,7 +577,7 @@ class PictureSlideshow {
             case 'wipe-right':
             case 'wipe-up':
             case 'wipe-down':
-                this.applyWipeTransition(currentImg, nextImg, this.transitionType);
+                this.applyWipeTransition(currentImg, nextImg, transitionType);
                 break;
             case 'cube':
                 this.applyCubeTransition(currentImg, nextImg);
@@ -909,7 +982,11 @@ class PictureSlideshow {
     }
 
     loadSettingsToForm() {
-        this.elements.transitionType.value = this.transitionType;
+        // Update transition checkboxes
+        this.elements.transitionCheckboxes.forEach(checkbox => {
+            checkbox.checked = this.transitionTypes.includes(checkbox.value);
+        });
+        
         this.elements.fadeDuration.value = this.fadeDuration;
         this.elements.fadeDurationValue.textContent = `${this.fadeDuration}s`;
         this.elements.kenBurnsEnabled.checked = this.kenBurnsEnabled;
