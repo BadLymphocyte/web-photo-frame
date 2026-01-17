@@ -4,14 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Picture Slideshow</title>
-    <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
     <script>
-        // Suppress Tailwind CDN warning in console
-        window.tailwindConfig = { corePlugins: { preflight: true } };
+        // Hide Tailwind CDN warning
+        (function() {
+            const originalWarn = console.warn;
+            console.warn = function(...args) {
+                if (args[0]?.includes?.('cdn.tailwindcss.com')) return;
+                originalWarn.apply(console, args);
+            };
+        })();
     </script>
     <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="https://unpkg.com/@jsquash/jxl@1.3.0/codec/dec/jxl_dec.js"></script>
-    <script src="https://unpkg.com/@jsquash/jxl@1.3.0"></script>
     <style>
         .slideshow-image {
             max-width: 100%;

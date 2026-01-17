@@ -114,7 +114,7 @@ Access the settings modal to customize:
 - PNG (.png)
 - GIF (.gif)
 - WebP (.webp)
-- **JPEG XL (.jxl)** - Next-generation image format with superior compression
+- **JPEG XL (.jxl)** - Requires browser with native JXL support (Chrome 113+, Edge 113+, or browsers with JXL flag enabled)
 
 ## Project Structure
 
@@ -175,10 +175,11 @@ The application is structured for easy extension:
 ### Common Issues
 
 1. **JXL Images Not Loading**
-   - Ensure @jsquash/jxl library loads properly
-   - Check browser console for decoder errors
-   - Verify JXL files are valid
-   - JXL files are converted to PNG in-browser for display
+   - JXL format requires browser native support
+   - Enable JXL in Chrome/Edge: `chrome://flags/#enable-jxl`
+   - Firefox: JXL support available in Firefox 90+ with flag enabled
+   - Safari: JXL not yet supported
+   - Alternative: Convert JXL to WebP or PNG for broader compatibility
 
 2. **Images Not Loading**
    - Check that images are in supported formats (JPG, PNG, GIF, WebP)
@@ -214,10 +215,14 @@ docker-compose logs picture-slideshow
 ## Browser Compatibility
 
 Tested and working on:
-- Chrome/Chromium 90+
-- Firefox 88+
-- Safari 14+
-- Edge 90+
+- Chrome/Chromium 90+ (JXL support in 113+ or with flag)
+- Firefox 88+ (JXL support with flag enabled)
+- Safari 14+ (JXL not supported)
+- Edge 90+ (JXL support in 113+ or with flag)
+
+### Enabling JXL Support
+- **Chrome/Edge**: Navigate to `chrome://flags/#enable-jxl` and enable
+- **Firefox**: Navigate to `about:config` and set `image.jxl.enabled` to `true`
 
 ## Performance Tips
 
@@ -228,8 +233,8 @@ Tested and working on:
 
 ## Known Limitations
 
-- JXL files are decoded in-browser and converted to PNG (requires JavaScript enabled)
-- JXL decoding may be slower than native formats
+- JXL files require browser with native JXL support enabled
+- Not all browsers support JXL format natively
 - Browser storage APIs not available in the Claude.ai environment
 - Maximum file upload size depends on server configuration
 
@@ -261,8 +266,9 @@ For issues and questions:
 - Added random transition support
 - Improved control auto-hiding in fullscreen
 - Fixed play/pause button state updates
-- Re-added JXL support using @jsquash/jxl library
-- Removed production warning for Tailwind CDN
+- Added JXL support (requires browser native support)
+- Fixed Tailwind CDN warning suppression
+- Fixed undefined element errors in settings
 
 ### v1.0
 - Initial release

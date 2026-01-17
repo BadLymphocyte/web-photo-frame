@@ -10,6 +10,8 @@ class PictureSlideshow {
         
         // Transition and effect settings
         this.transitionType = 'fade';
+        this.transitionTypes = ['fade']; // Array for multiple transition selection
+        this.randomTransitions = false; // Whether to use random transitions
         this.fadeDuration = 0.5;
         this.kenBurnsEnabled = false;
         this.kenBurnsType = 'zoom';
@@ -56,6 +58,7 @@ class PictureSlideshow {
             settingsBtn: document.getElementById('settingsBtn'),
             settingsModal: document.getElementById('settingsModal'),
             closeSettingsBtn: document.getElementById('closeSettingsBtn'),
+            transitionType: document.getElementById('transitionType'),
             transitionCheckboxes: document.querySelectorAll('.transition-checkbox'),
             randomTransitions: document.getElementById('randomTransitions'),
             fadeDuration: document.getElementById('fadeDuration'),
@@ -261,25 +264,10 @@ class PictureSlideshow {
     }
 
     async initializeJXL() {
-        // Use @jsquash/jxl library for JXL decoding
-        try {
-            if (typeof jsquash !== 'undefined' && jquash.jxl) {
-                this.jxlDecoder = jquash.jxl;
-                console.log('JXL decoder initialized successfully');
-            } else {
-                console.info('JXL decoder not available - checking for alternative...');
-                // Give it a moment to load
-                await new Promise(resolve => setTimeout(resolve, 500));
-                if (typeof jquash !== 'undefined' && jquash.jxl) {
-                    this.jxlDecoder = jquash.jxl;
-                    console.log('JXL decoder initialized successfully (delayed)');
-                } else {
-                    console.warn('JXL decoder not available after delay');
-                }
-            }
-        } catch (error) {
-            console.warn('Error initializing JXL decoder:', error.message);
-        }
+        // Simple fallback - JXL files will be handled by server or browser if supported
+        // For now, we'll just pass them through as regular images
+        this.jxlDecoder = null;
+        console.info('JXL files will be served directly - browser native support required');
     }
 
     async handleFileUpload(files) {
@@ -357,61 +345,7 @@ class PictureSlideshow {
         const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/jxl'];
         const isJXL = file.name.toLowerCase().endsWith('.jxl') || file.type === 'image/jxl';
         
-        if (isJXL) {
-            if (!this.jxlDecoder) {
-                console.warn('JXL file detected but decoder not available yet:', file.name);
-                // Allow it anyway - decoder might load later
-            }
-            return true;
-        }
-        
-        return validTypes.includes(file.type);
-    }
-
-    async processImageFile(file) {
-        if (file.type === 'image/jxl' || file.name.toLowerCase().endsWith('.jxl')) {
-            return await this.processJXLFile(file);
-        } else {
-            return this.processRegularImageFile(file);
-        }
-    }
-
-    async processJXLFile(file) {
-        if (!this.jxlDecoder) {
-            console.error('JXL decoder not available');
-            // Return regular file URL as fallback
-            return this.processRegularImageFile(file);
-        }
-
-        try {
-            const arrayBuffer = await file.arrayBuffer();
-            const uint8Array = new Uint8Array(arrayBuffer);
-            
-            // Decode JXL to ImageData using @jsquash/jxl
-            const imageData = await this.jxlDecoder.decode(uint8Array);
-            
-            // Convert ImageData to canvas and then to blob
-            const canvas = document.createElement('canvas');
-            canvas.width = imageData.width;
-            canvas.height = imageData.height;
-            const ctx = canvas.getContext('2d');
-            ctx.putImageData(imageData, 0, 0);
-            
-            // Convert canvas to blob
-            const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
-            const url = URL.createObjectURL(blob);
-            
-            return { url };
-        } catch (error) {
-            console.error('Error processing JXL file:', error);
-            // Fallback to regular file URL
-            return this.processRegularImageFile(file);
-        }
-    }
-
-    processRegularImageFile(file) {
-        const url = URL.createObjectURL(file);
-        return { url };
+        return validTypes.includes(file.type) || isJXL;
     }
 
     createThumbnails() {
@@ -510,8 +444,6 @@ class PictureSlideshow {
             lucide.createIcons();
         }
         
-        this.updateMinimalPlayPauseButton();
-        
         this.slideInterval = setInterval(() => {
             this.nextImage();
         }, this.slideSpeed);
@@ -572,7 +504,7 @@ class PictureSlideshow {
             case 'wipe-right':
             case 'wipe-up':
             case 'wipe-down':
-                this.applyWipeTransition(currentImg, nextImg, transitionType);
+                this.applyWipeTransition(currentImg, nextImg, this.transitionType);
                 break;
             case 'cube':
                 this.applyCubeTransition(currentImg, nextImg);
