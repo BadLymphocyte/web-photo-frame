@@ -117,11 +117,6 @@
                     <i data-lucide="maximize"></i>
                     Fullscreen
                 </button>
-                <button id="uploadBtn" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg flex items-center gap-2 transition-colors">
-                    <i data-lucide="upload"></i>
-                    Upload Images
-                </button>
-                <input type="file" id="fileInput" multiple accept="image/*,.jxl" class="hidden">
             </div>
         </div>
     </header>
@@ -133,8 +128,8 @@
             <div id="imageContainer" class="relative w-full h-full flex items-center justify-center transition-container">
                 <div id="noImagesMessage" class="text-center text-gray-400">
                     <i data-lucide="image-off" class="w-16 h-16 mx-auto mb-4"></i>
-                    <p class="text-lg">No images loaded</p>
-                    <p class="text-sm mt-2">Upload images to start the slideshow</p>
+                    <p class="text-lg">No images found</p>
+                    <p class="text-sm mt-2">Add images to the images directory on the server</p>
                 </div>
                 <img id="currentImage" class="slideshow-image hidden" alt="Slideshow image">
                 <img id="nextImage" class="slideshow-image hidden" alt="Next slideshow image">

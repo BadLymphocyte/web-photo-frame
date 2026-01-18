@@ -17,7 +17,6 @@ class PictureSlideshow {
         this.isTransitioning = false;
         this.randomOrder = false; // Display images in random order
         this.previousRandomIndex = -1; // Track last random image to avoid repeats
-        this.abortController = null; // For cancelling uploads
         
         // Check URL parameters
         this.checkURLParameters();
@@ -27,7 +26,6 @@ class PictureSlideshow {
         this.initializeJXL();
         this.loadSettings();
         this.loadImagesFromServer();
-        this.updateUI();
         
         // Start in fullscreen if requested
         if (this.startInFullscreen) {
@@ -37,8 +35,6 @@ class PictureSlideshow {
 
     initializeElements() {
         this.elements = {
-            fileInput: document.getElementById('fileInput'),
-            uploadBtn: document.getElementById('uploadBtn'),
             currentImage: document.getElementById('currentImage'),
             nextImage: document.getElementById('nextImage'),
             noImagesMessage: document.getElementById('noImagesMessage'),
@@ -74,14 +70,6 @@ class PictureSlideshow {
     }
 
     attachEventListeners() {
-        this.elements.uploadBtn.addEventListener('click', () => {
-            this.elements.fileInput.click();
-        });
-
-        this.elements.fileInput.addEventListener('change', (e) => {
-            this.handleFileUpload(e.target.files);
-        });
-
         this.elements.prevBtn.addEventListener('click', () => {
             this.previousImage();
         });
@@ -233,23 +221,6 @@ class PictureSlideshow {
             }
         });
 
-        // Drag and drop
-        const dropZone = document.body;
-        dropZone.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            dropZone.classList.add('bg-gray-700');
-        });
-
-        dropZone.addEventListener('dragleave', () => {
-            dropZone.classList.remove('bg-gray-700');
-        });
-
-        dropZone.addEventListener('drop', (e) => {
-            e.preventDefault();
-            dropZone.classList.remove('bg-gray-700');
-            this.handleFileUpload(e.dataTransfer.files);
-        });
-
         // Auto-hide controls on main screen
         this.setupAutoHideControls();
     }
@@ -261,48 +232,6 @@ class PictureSlideshow {
         console.info('JXL files will be served directly - browser native support required');
     }
 
-    async handleFileUpload(files) {
-        try {
-            // Cancel any pending upload
-            if (this.abortController) {
-                this.abortController.abort();
-            }
-            this.abortController = new AbortController();
-            
-            const formData = new FormData();
-            
-            Array.from(files).forEach(file => {
-                if (this.isImageFile(file)) {
-                    formData.append('images', file);
-                }
-            });
-
-            const response = await fetch('/api/upload', {
-                method: 'POST',
-                body: formData,
-                signal: this.abortController.signal
-            });
-
-            const result = await response.json();
-
-            if (result.success) {
-                await this.loadImagesFromServer();
-                this.showNotification(result.message, 'success');
-            } else {
-                this.showNotification(result.error || 'Upload failed', 'error');
-            }
-        } catch (error) {
-            if (error.name === 'AbortError') {
-                console.log('Upload cancelled');
-                return;
-            }
-            console.error('Upload error:', error);
-            this.showNotification('Upload failed: ' + error.message, 'error');
-        } finally {
-            this.abortController = null;
-        }
-    }
-
     async loadImagesFromServer() {
         try {
             const response = await fetch('/api/images');
@@ -310,7 +239,8 @@ class PictureSlideshow {
             
             this.images = serverImages.map(img => ({
                 name: img.name,
-                url: `/images/${encodeURIComponent(img.name)}`,
+                url: `/images/${encodeURIComponent(img.path)}`,
+                path: img.path,
                 type: img.type,
                 size: img.size
             }));
