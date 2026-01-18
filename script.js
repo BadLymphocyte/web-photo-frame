@@ -815,6 +815,12 @@ class PictureSlideshow {
             const container = document.getElementById('imageContainer');
             container.style.cssText = 'position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: black; display: flex; align-items: center; justify-content: center; margin: 0; padding: 0;';
             
+            // Show controls and set up fullscreen auto-hide
+            if (this.elements.controls) {
+                this.elements.controls.style.display = '';
+                this.setupFullscreenAutoHide();
+            }
+            
             // Update button
             const btn = this.elements.fullscreenBtn;
             if (btn) {
@@ -832,6 +838,9 @@ class PictureSlideshow {
             const container = document.getElementById('imageContainer');
             container.style.cssText = '';
             
+            // Clean up fullscreen auto-hide
+            this.cleanupFullscreenAutoHide();
+            
             // Update button
             const btn = this.elements.fullscreenBtn;
             if (btn) {
@@ -839,6 +848,104 @@ class PictureSlideshow {
                 lucide.createIcons();
             }
         }
+    }
+
+    setupFullscreenAutoHide() {
+        const controls = this.elements.controls;
+        const imageContainer = document.getElementById('imageContainer');
+        
+        const showControls = () => {
+            if (controls) {
+                controls.style.opacity = '1';
+                controls.style.pointerEvents = 'auto';
+            }
+        };
+        
+        const hideControls = () => {
+            if (controls) {
+                controls.style.opacity = '0';
+                controls.style.pointerEvents = 'none';
+            }
+        };
+        
+        // Store timeout reference
+        let hideTimeout;
+        
+        // Mouse move handler
+        const mouseMoveHandler = () => {
+            showControls();
+            clearTimeout(hideTimeout);
+            hideTimeout = setTimeout(hideControls, 3000);
+        };
+        
+        // Mouse leave handler
+        const mouseLeaveHandler = () => {
+            clearTimeout(hideTimeout);
+            hideTimeout = setTimeout(hideControls, 1000);
+        };
+        
+        // Keep controls visible when hovering over them
+        const controlsEnterHandler = () => {
+            showControls();
+            clearTimeout(hideTimeout);
+        };
+        
+        const controlsLeaveHandler = () => {
+            clearTimeout(hideTimeout);
+            hideTimeout = setTimeout(hideControls, 1000);
+        };
+        
+        // Add event listeners
+        if (imageContainer) {
+            imageContainer.addEventListener('mousemove', mouseMoveHandler);
+            imageContainer.addEventListener('mouseleave', mouseLeaveHandler);
+        }
+        
+        if (controls) {
+            controls.addEventListener('mouseenter', controlsEnterHandler);
+            controls.addEventListener('mouseleave', controlsLeaveHandler);
+        }
+        
+        // Store handlers for cleanup
+        this.fullscreenHandlers = {
+            mouseMoveHandler,
+            mouseLeaveHandler,
+            controlsEnterHandler,
+            controlsLeaveHandler,
+            hideTimeout
+        };
+        
+        // Initially hide after 3 seconds
+        hideTimeout = setTimeout(hideControls, 3000);
+    }
+
+    cleanupFullscreenAutoHide() {
+        if (!this.fullscreenHandlers) return;
+        
+        const imageContainer = document.getElementById('imageContainer');
+        const controls = this.elements.controls;
+        
+        // Remove event listeners
+        if (imageContainer) {
+            imageContainer.removeEventListener('mousemove', this.fullscreenHandlers.mouseMoveHandler);
+            imageContainer.removeEventListener('mouseleave', this.fullscreenHandlers.mouseLeaveHandler);
+        }
+        
+        if (controls) {
+            controls.removeEventListener('mouseenter', this.fullscreenHandlers.controlsEnterHandler);
+            controls.removeEventListener('mouseleave', this.fullscreenHandlers.controlsLeaveHandler);
+            
+            // Reset controls visibility
+            controls.style.opacity = '';
+            controls.style.pointerEvents = '';
+        }
+        
+        // Clear timeout
+        if (this.fullscreenHandlers.hideTimeout) {
+            clearTimeout(this.fullscreenHandlers.hideTimeout);
+        }
+        
+        this.fullscreenHandlers = null;
     }
 
     // Settings modal methods
