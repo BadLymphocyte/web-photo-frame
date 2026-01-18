@@ -16,6 +16,8 @@ class PictureSlideshow {
         this.startInFullscreen = false;
         this.isTransitioning = false;
         this.randomOrder = false; // Display images in random order
+        this.previousRandomIndex = -1; // Track last random image to avoid repeats
+        this.abortController = null; // For cancelling uploads
         
         // Check URL parameters
         this.checkURLParameters();
@@ -261,6 +263,12 @@ class PictureSlideshow {
 
     async handleFileUpload(files) {
         try {
+            // Cancel any pending upload
+            if (this.abortController) {
+                this.abortController.abort();
+            }
+            this.abortController = new AbortController();
+            
             const formData = new FormData();
             
             Array.from(files).forEach(file => {
@@ -271,7 +279,8 @@ class PictureSlideshow {
 
             const response = await fetch('/api/upload', {
                 method: 'POST',
-                body: formData
+                body: formData,
+                signal: this.abortController.signal
             });
 
             const result = await response.json();
@@ -283,8 +292,14 @@ class PictureSlideshow {
                 this.showNotification(result.error || 'Upload failed', 'error');
             }
         } catch (error) {
+            if (error.name === 'AbortError') {
+                console.log('Upload cancelled');
+                return;
+            }
             console.error('Upload error:', error);
             this.showNotification('Upload failed: ' + error.message, 'error');
+        } finally {
+            this.abortController = null;
         }
     }
 
@@ -381,6 +396,10 @@ class PictureSlideshow {
         if (this.images.length === 0 || this.isTransitioning) return;
 
         const currentImage = this.images[this.currentIndex];
+        if (!currentImage) {
+            console.error('Invalid image index:', this.currentIndex);
+            return;
+        }
         
         this.isTransitioning = true;
         
@@ -406,7 +425,17 @@ class PictureSlideshow {
         if (this.images.length === 0 || this.isTransitioning) return;
         
         if (this.randomOrder) {
-            this.currentIndex = Math.floor(Math.random() * this.images.length);
+            // Prevent showing the same image twice in a row
+            let newIndex;
+            if (this.images.length === 1) {
+                newIndex = 0;
+            } else {
+                do {
+                    newIndex = Math.floor(Math.random() * this.images.length);
+                } while (newIndex === this.previousRandomIndex);
+                this.previousRandomIndex = newIndex;
+            }
+            this.currentIndex = newIndex;
         } else {
             this.currentIndex = this.currentIndex === 0 
                 ? this.loop ? this.images.length - 1 : 0
@@ -420,7 +449,17 @@ class PictureSlideshow {
         if (this.images.length === 0 || this.isTransitioning) return;
         
         if (this.randomOrder) {
-            this.currentIndex = Math.floor(Math.random() * this.images.length);
+            // Prevent showing the same image twice in a row
+            let newIndex;
+            if (this.images.length === 1) {
+                newIndex = 0;
+            } else {
+                do {
+                    newIndex = Math.floor(Math.random() * this.images.length);
+                } while (newIndex === this.previousRandomIndex);
+                this.previousRandomIndex = newIndex;
+            }
+            this.currentIndex = newIndex;
         } else {
             this.currentIndex = this.currentIndex === this.images.length - 1 
                 ? this.loop ? 0 : this.images.length - 1
@@ -566,6 +605,13 @@ class PictureSlideshow {
         const current = this.elements.currentImage;
         const next = this.elements.nextImage;
         
+        // Add error handling for image loading
+        next.onerror = () => {
+            console.error('Failed to load image:', imageUrl);
+            this.showNotification('Failed to load image', 'error');
+            this.isTransitioning = false;
+        };
+        
         next.src = imageUrl;
         next.classList.remove('hidden');
         
@@ -641,12 +687,18 @@ class PictureSlideshow {
     }
 
     completeTransition(current, next) {
-        current.src = next.src;
-        current.style.cssText = '';
-        current.classList.remove('hidden');
-        next.classList.add('hidden');
-        next.style.cssText = '';
-        this.isTransitioning = false;
+        try {
+            current.src = next.src;
+            current.style.cssText = '';
+            current.classList.remove('hidden');
+            next.classList.add('hidden');
+            next.style.cssText = '';
+            next.onerror = null; // Clean up error handler
+            this.isTransitioning = false;
+        } catch (error) {
+            console.error('Transition completion error:', error);
+            this.isTransitioning = false;
+        }
     }
 
     // Fullscreen methods - Simple implementation
@@ -688,11 +740,16 @@ class PictureSlideshow {
         this.isFullscreen = isFullscreen;
         
         if (isFullscreen) {
-            // Hide all UI elements
-            document.querySelector('header').style.display = 'none';
-            document.querySelector('footer').style.display = 'none';
-            document.querySelector('aside').style.display = 'none';
-            document.querySelector('main').style.cssText = 'margin: 0; padding: 0;';
+            // Hide all UI elements with null checks
+            const header = document.querySelector('header');
+            const footer = document.querySelector('footer');
+            const aside = document.querySelector('aside');
+            const main = document.querySelector('main');
+            
+            if (header) header.style.display = 'none';
+            if (footer) footer.style.display = 'none';
+            if (aside) aside.style.display = 'none';
+            if (main) main.style.cssText = 'margin: 0; padding: 0;';
             
             // Make image container fill screen and center content
             const container = document.getElementById('imageContainer');
@@ -711,11 +768,16 @@ class PictureSlideshow {
                 lucide.createIcons();
             }
         } else {
-            // Restore all UI elements
-            document.querySelector('header').style.display = '';
-            document.querySelector('footer').style.display = '';
-            document.querySelector('aside').style.display = '';
-            document.querySelector('main').style.cssText = '';
+            // Restore all UI elements with null checks
+            const header = document.querySelector('header');
+            const footer = document.querySelector('footer');
+            const aside = document.querySelector('aside');
+            const main = document.querySelector('main');
+            
+            if (header) header.style.display = '';
+            if (footer) footer.style.display = '';
+            if (aside) aside.style.display = '';
+            if (main) main.style.cssText = '';
             
             // Reset image container
             const container = document.getElementById('imageContainer');
