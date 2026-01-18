@@ -55,6 +55,12 @@
             padding: 0 !important;
         }
         
+        body:fullscreen #imageCounter,
+        body:-webkit-full-screen #imageCounter,
+        body:-moz-full-screen #imageCounter {
+            display: none !important;
+        }
+        
         .transition-container {
             position: relative;
             width: 100%;
@@ -172,9 +178,8 @@
             <div class="flex flex-wrap items-center justify-between gap-4">
                 <div class="flex items-center gap-4">
                     <label class="flex items-center gap-2">
-                        <span>Speed:</span>
-                        <input type="range" id="speedSlider" min="1" max="10" value="3" class="w-24">
-                        <span id="speedValue">3s</span>
+                        <span>Display Time (seconds):</span>
+                        <input type="number" id="speedInput" min="3" max="600" value="3" class="w-20 px-2 py-1 bg-gray-700 border border-gray-600 rounded text-white">
                     </label>
                     <label class="flex items-center gap-2">
                         <input type="checkbox" id="loopCheckbox" checked class="rounded">
@@ -286,9 +291,9 @@
                     <div class="space-y-4">
                         <div>
                             <label class="flex items-center gap-2">
-                                <span>Display Speed:</span>
-                                <input type="range" id="modalSpeedSlider" min="1" max="10" value="3" class="flex-1">
-                                <span id="modalSpeedValue">3s</span>
+                                <span>Display Time (seconds):</span>
+                                <input type="number" id="modalSpeedInput" min="3" max="600" value="3" class="w-24 px-2 py-1 bg-gray-600 border border-gray-500 rounded text-white">
+                                <span class="text-sm text-gray-400">(3-600)</span>
                             </label>
                         </div>
                         

@@ -43,8 +43,7 @@ class PictureSlideshow {
             nextBtn: document.getElementById('nextBtn'),
             playPauseBtn: document.getElementById('playPauseBtn'),
             thumbnailContainer: document.getElementById('thumbnailContainer'),
-            speedSliderFooter: document.querySelector('footer #speedSlider'),
-            speedValueFooter: document.querySelector('footer #speedValue'),
+            speedInputFooter: document.querySelector('footer #speedInput'),
             loopCheckboxFooter: document.querySelector('footer #loopCheckbox'),
             currentIndex: document.getElementById('currentIndex'),
             totalImages: document.getElementById('totalImages'),
@@ -57,8 +56,7 @@ class PictureSlideshow {
             transitionCheckboxes: document.querySelectorAll('.transition-checkbox'),
             fadeDuration: document.getElementById('fadeDuration'),
             fadeDurationValue: document.getElementById('fadeDurationValue'),
-            speedSliderSettings: document.getElementById('modalSpeedSlider'),
-            speedValueSettings: document.getElementById('modalSpeedValue'),
+            speedInputSettings: document.getElementById('modalSpeedInput'),
             loopCheckboxSettings: document.getElementById('modalLoopCheckbox'),
             startFullscreenCheckbox: document.getElementById('startFullscreenCheckbox'),
             randomOrderCheckbox: document.getElementById('randomOrderCheckbox'),
@@ -83,10 +81,16 @@ class PictureSlideshow {
         });
 
         // Footer controls
-        if (this.elements.speedSliderFooter) {
-            this.elements.speedSliderFooter.addEventListener('input', (e) => {
-                this.slideSpeed = e.target.value * 1000;
-                this.elements.speedValueFooter.textContent = `${e.target.value}s`;
+        if (this.elements.speedInputFooter) {
+            this.elements.speedInputFooter.addEventListener('change', (e) => {
+                let value = parseInt(e.target.value);
+                if (isNaN(value) || value < 3) {
+                    value = 3;
+                } else if (value > 600) {
+                    value = 600;
+                }
+                e.target.value = value;
+                this.slideSpeed = value * 1000;
                 if (this.isPlaying) {
                     this.stopSlideshow();
                     this.startSlideshow();
@@ -138,13 +142,18 @@ class PictureSlideshow {
             this.updateCSSVariables();
         });
 
-        this.elements.speedSliderSettings.addEventListener('input', (e) => {
-            this.slideSpeed = e.target.value * 1000;
-            this.elements.speedValueSettings.textContent = `${e.target.value}s`;
-            // Also update footer slider
-            if (this.elements.speedSliderFooter) {
-                this.elements.speedSliderFooter.value = e.target.value;
-                this.elements.speedValueFooter.textContent = `${e.target.value}s`;
+        this.elements.speedInputSettings.addEventListener('change', (e) => {
+            let value = parseInt(e.target.value);
+            if (isNaN(value) || value < 3) {
+                value = 3;
+            } else if (value > 600) {
+                value = 600;
+            }
+            e.target.value = value;
+            this.slideSpeed = value * 1000;
+            // Also update footer input
+            if (this.elements.speedInputFooter) {
+                this.elements.speedInputFooter.value = value;
             }
             if (this.isPlaying) {
                 this.stopSlideshow();
@@ -939,9 +948,11 @@ class PictureSlideshow {
         this.elements.startFullscreenCheckbox.checked = this.startInFullscreen;
         this.elements.randomOrderCheckbox.checked = this.randomOrder;
         
-        if (this.elements.speedSliderSettings) {
-            this.elements.speedSliderSettings.value = this.slideSpeed / 1000;
-            this.elements.speedValueSettings.textContent = `${this.slideSpeed / 1000}s`;
+        if (this.elements.speedInputSettings) {
+            this.elements.speedInputSettings.value = this.slideSpeed / 1000;
+        }
+        if (this.elements.speedInputFooter) {
+            this.elements.speedInputFooter.value = this.slideSpeed / 1000;
         }
         if (this.elements.loopCheckboxSettings) {
             this.elements.loopCheckboxSettings.checked = this.loop;
@@ -978,9 +989,8 @@ class PictureSlideshow {
             this.loop = s.loop !== undefined ? s.loop : true;
             this.randomOrder = s.randomOrder || false;
             
-            if (this.elements.speedSliderFooter) {
-                this.elements.speedSliderFooter.value = this.slideSpeed / 1000;
-                this.elements.speedValueFooter.textContent = `${this.slideSpeed / 1000}s`;
+            if (this.elements.speedInputFooter) {
+                this.elements.speedInputFooter.value = this.slideSpeed / 1000;
             }
             if (this.elements.loopCheckboxFooter) {
                 this.elements.loopCheckboxFooter.checked = this.loop;
@@ -1004,9 +1014,8 @@ class PictureSlideshow {
         this.syncSettingsToForm();
         this.saveSettings();
         
-        if (this.elements.speedSliderFooter) {
-            this.elements.speedSliderFooter.value = 3;
-            this.elements.speedValueFooter.textContent = '3s';
+        if (this.elements.speedInputFooter) {
+            this.elements.speedInputFooter.value = 3;
         }
         if (this.elements.loopCheckboxFooter) {
             this.elements.loopCheckboxFooter.checked = true;
