@@ -617,6 +617,7 @@ class PictureSlideshow {
         
         const transitions = {
             'fade': () => this.transitionFade(current, next),
+            'dissolve': () => this.transitionDissolve(current, next),
             'wipe-left': () => this.transitionWipe(current, next, 'left'),
             'wipe-right': () => this.transitionWipe(current, next, 'right'),
             'wipe-up': () => this.transitionWipe(current, next, 'up'),
@@ -640,6 +641,25 @@ class PictureSlideshow {
         });
         
         setTimeout(() => this.completeTransition(current, next), this.fadeDuration * 1000);
+    }
+
+    transitionDissolve(current, next) {
+        // Crossfade effect - both images visible during transition
+        current.style.opacity = '1';
+        next.style.opacity = '0';
+        next.style.zIndex = '2';
+        current.style.zIndex = '1';
+        
+        requestAnimationFrame(() => {
+            next.style.transition = `opacity ${this.fadeDuration}s ease-in-out`;
+            next.style.opacity = '1';
+        });
+        
+        setTimeout(() => {
+            current.style.zIndex = '';
+            next.style.zIndex = '';
+            this.completeTransition(current, next);
+        }, this.fadeDuration * 1000);
     }
 
     transitionWipe(current, next, direction) {
