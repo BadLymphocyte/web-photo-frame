@@ -786,6 +786,11 @@ class PictureSlideshow {
             if (aside) aside.style.display = 'none';
             if (main) main.style.cssText = 'margin: 0; padding: 0;';
             
+            // Hide image counter in fullscreen
+            if (this.elements.imageCounter) {
+                this.elements.imageCounter.style.display = 'none';
+            }
+            
             // Make image container fill screen and center content
             const container = document.getElementById('imageContainer');
             container.style.cssText = 'position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: black; display: flex; align-items: center; justify-content: center; margin: 0; padding: 0;';
@@ -813,6 +818,11 @@ class PictureSlideshow {
             if (footer) footer.style.display = '';
             if (aside) aside.style.display = '';
             if (main) main.style.cssText = '';
+            
+            // Show image counter when exiting fullscreen
+            if (this.elements.imageCounter && this.images.length > 0) {
+                this.elements.imageCounter.style.display = '';
+            }
             
             // Reset image container
             const container = document.getElementById('imageContainer');
