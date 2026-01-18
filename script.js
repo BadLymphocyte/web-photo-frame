@@ -574,196 +574,102 @@ class PictureSlideshow {
         setTimeout(hideControls, 3000);
     }
 
-    // Transition methods - FIXED
+      // Transition methods - Clean implementation
     applyTransition(imageUrl) {
-        const currentImg = this.elements.currentImage;
-        const nextImg = this.elements.nextImage;
+        const transition = this.transitionTypes.length > 1 
+            ? this.transitionTypes[Math.floor(Math.random() * this.transitionTypes.length)]
+            : this.transitionTypes[0];
         
-        // Remove Ken Burns effect during transition
-        currentImg.classList.remove('ken-burns', 'ken-burns-pan');
-        nextImg.classList.remove('ken-burns', 'ken-burns-pan');
-        
-        // Set up the next image
-        nextImg.src = imageUrl;
-        nextImg.classList.remove('hidden');
-        
-        // Get transition type (random if multiple selected)
-        const transitionType = this.transitionTypes.length > 1 
-            ? this.getRandomTransition() 
-            : this.transitionType;
-        
-        // Apply transition based on type
-        switch (transitionType) {
-            case 'fade':
-                this.applyFadeTransition(currentImg, nextImg);
-                break;
-            case 'wipe-left':
-            case 'wipe-right':
-            case 'wipe-up':
-            case 'wipe-down':
-                this.applyWipeTransition(currentImg, nextImg, transitionType);
-                break;
-            case 'cube':
-                this.applyCubeTransition(currentImg, nextImg);
-                break;
-            default:
-                this.applyDirectTransition(currentImg, nextImg);
-        }
+        this.executeTransition(imageUrl, transition);
     }
 
-    applyFadeTransition(currentImg, nextImg) {
-        // Reset both images to centered position
-        currentImg.style.cssText = 'opacity: 1; transition: none;';
-        nextImg.style.cssText = 'opacity: 0; transition: none;';
+    executeTransition(imageUrl, type) {
+        const current = this.elements.currentImage;
+        const next = this.elements.nextImage;
         
-        // Show next image
-        nextImg.classList.remove('hidden');
-        this.elements.noImagesMessage.classList.add('hidden');
+        current.classList.remove('ken-burns', 'ken-burns-pan');
+        next.src = imageUrl;
+        next.classList.remove('hidden');
         
-        // Force reflow
-        void nextImg.offsetHeight;
-        
-        // Apply transitions
-        currentImg.style.transition = `opacity ${this.fadeDuration}s ease-in-out`;
-        nextImg.style.transition = `opacity ${this.fadeDuration}s ease-in-out`;
-        
-        // Start fade
-        requestAnimationFrame(() => {
-            currentImg.style.opacity = '0';
-            nextImg.style.opacity = '1';
-        });
-        
-        setTimeout(() => {
-            // Clean up
-            currentImg.src = nextImg.src;
-            currentImg.style.cssText = '';
-            currentImg.classList.remove('hidden');
-            
-            nextImg.classList.add('hidden');
-            nextImg.style.cssText = '';
-            
-            this.elements.controls.classList.remove('hidden');
-            this.elements.imageCounter.classList.remove('hidden');
-            
-            this.isTransitioning = false;
-            this.applyKenBurnsEffect();
-        }, this.fadeDuration * 1000);
-    }
-
-    applyWipeTransition(currentImg, nextImg, direction) {
-        const container = this.elements.currentImage.parentElement;
-        
-        // Position images absolutely within container
-        currentImg.style.cssText = 'position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); transition: none; width: auto; max-width: 100%; max-height: 100%; z-index: 1;';
-        nextImg.style.cssText = 'position: absolute; top: 50%; left: 50%; width: auto; max-width: 100%; max-height: 100%; z-index: 2;';
-        
-        // Set initial position for next image based on direction
-        const transforms = {
-            'wipe-left': 'translate(50%, -50%)',
-            'wipe-right': 'translate(-150%, -50%)',
-            'wipe-up': 'translate(-50%, 50%)',
-            'wipe-down': 'translate(-50%, -150%)'
+        const transitions = {
+            'fade': () => this.transitionFade(current, next),
+            'wipe-left': () => this.transitionWipe(current, next, 'left'),
+            'wipe-right': () => this.transitionWipe(current, next, 'right'),
+            'wipe-up': () => this.transitionWipe(current, next, 'up'),
+            'wipe-down': () => this.transitionWipe(current, next, 'down'),
+            'cube': () => this.transitionCube(current, next)
         };
         
-        nextImg.style.transform = transforms[direction];
-        nextImg.style.transition = 'none';
-        
-        // Show next image
-        nextImg.classList.remove('hidden');
-        this.elements.noImagesMessage.classList.add('hidden');
-        
-        // Force reflow
-        void nextImg.offsetHeight;
-        
-        // Apply transition
-        nextImg.style.transition = `transform ${this.fadeDuration}s ease-in-out`;
-        
-        // Start wipe
-        requestAnimationFrame(() => {
-            nextImg.style.transform = 'translate(-50%, -50%)';
-        });
-        
-        setTimeout(() => {
-            // Clean up
-            currentImg.src = nextImg.src;
-            currentImg.style.cssText = '';
-            currentImg.classList.remove('hidden');
-            
-            nextImg.classList.add('hidden');
-            nextImg.style.cssText = '';
-            
-            this.elements.controls.classList.remove('hidden');
-            this.elements.imageCounter.classList.remove('hidden');
-            
-            this.isTransitioning = false;
-            this.applyKenBurnsEffect();
-        }, this.fadeDuration * 1000);
+        const transitionFn = transitions[type] || (() => this.transitionNone(current, next));
+        transitionFn();
     }
 
-    applyCubeTransition(currentImg, nextImg) {
-        const container = this.elements.currentImage.parentElement;
+    transitionFade(current, next) {
+        current.style.opacity = '1';
+        next.style.opacity = '0';
+        
+        requestAnimationFrame(() => {
+            current.style.transition = `opacity ${this.fadeDuration}s ease-in-out`;
+            next.style.transition = `opacity ${this.fadeDuration}s ease-in-out`;
+            current.style.opacity = '0';
+            next.style.opacity = '1';
+        });
+        
+        setTimeout(() => this.completeTransition(current, next), this.fadeDuration * 1000);
+    }
+
+    transitionWipe(current, next, direction) {
+        const offsets = {
+            'left': 'translateX(100%)',
+            'right': 'translateX(-100%)',
+            'up': 'translateY(100%)',
+            'down': 'translateY(-100%)'
+        };
+        
+        next.style.transform = offsets[direction];
+        
+        requestAnimationFrame(() => {
+            next.style.transition = `transform ${this.fadeDuration}s ease-in-out`;
+            next.style.transform = 'translate(0, 0)';
+        });
+        
+        setTimeout(() => this.completeTransition(current, next), this.fadeDuration * 1000);
+    }
+
+    transitionCube(current, next) {
+        const container = current.parentElement;
         container.style.perspective = '1000px';
         
-        // Setup 3D space
-        currentImg.style.cssText = 'position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotateY(0deg); transform-style: preserve-3d; transition: none; width: auto; max-width: 100%; max-height: 100%; z-index: 1;';
-        nextImg.style.cssText = 'position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotateY(-90deg); transform-style: preserve-3d; transition: none; width: auto; max-width: 100%; max-height: 100%; z-index: 2;';
+        current.style.transformStyle = 'preserve-3d';
+        next.style.transformStyle = 'preserve-3d';
+        current.style.transform = 'rotateY(0deg)';
+        next.style.transform = 'rotateY(-90deg)';
         
-        // Show next image
-        nextImg.classList.remove('hidden');
-        this.elements.noImagesMessage.classList.add('hidden');
-        
-        // Force reflow
-        void nextImg.offsetHeight;
-        
-        // Apply transitions
-        currentImg.style.transition = `transform ${this.fadeDuration}s ease-in-out`;
-        nextImg.style.transition = `transform ${this.fadeDuration}s ease-in-out`;
-        
-        // Start rotation
         requestAnimationFrame(() => {
-            currentImg.style.transform = 'translate(-50%, -50%) rotateY(90deg)';
-            nextImg.style.transform = 'translate(-50%, -50%) rotateY(0deg)';
+            current.style.transition = `transform ${this.fadeDuration}s ease-in-out`;
+            next.style.transition = `transform ${this.fadeDuration}s ease-in-out`;
+            current.style.transform = 'rotateY(90deg)';
+            next.style.transform = 'rotateY(0deg)';
         });
         
         setTimeout(() => {
-            // Clean up
-            currentImg.src = nextImg.src;
-            currentImg.style.cssText = '';
-            currentImg.classList.remove('hidden');
-            
-            nextImg.classList.add('hidden');
-            nextImg.style.cssText = '';
-            
             container.style.perspective = '';
-            
-            this.elements.controls.classList.remove('hidden');
-            this.elements.imageCounter.classList.remove('hidden');
-            
-            this.isTransitioning = false;
-            this.applyKenBurnsEffect();
+            this.completeTransition(current, next);
         }, this.fadeDuration * 1000);
     }
 
-    applyDirectTransition(currentImg, nextImg) {
-        currentImg.src = nextImg.src;
-        nextImg.classList.add('hidden');
-        this.isTransitioning = false;
-        this.applyKenBurnsEffect();
+    transitionNone(current, next) {
+        this.completeTransition(current, next);
     }
 
-    // Ken Burns effect methods
-    applyKenBurnsEffect() {
-        const currentImg = this.elements.currentImage;
-        
-        currentImg.classList.remove('ken-burns', 'ken-burns-pan');
-        
-        if (this.kenBurnsEnabled && !currentImg.classList.contains('hidden') && !this.isTransitioning) {
-            if (this.kenBurnsType === 'zoom') {
-                currentImg.classList.add('ken-burns');
-            } else if (this.kenBurnsType === 'pan') {
-                currentImg.classList.add('ken-burns-pan');
-            }
-        }
+    completeTransition(current, next) {
+        current.src = next.src;
+        current.style.cssText = '';
+        current.classList.remove('hidden');
+        next.classList.add('hidden');
+        next.style.cssText = '';
+        this.isTransitioning = false;
+        this.applyKenBurnsEffect();
     }
 
     // Fullscreen methods - Simple implementation
@@ -948,20 +854,19 @@ class PictureSlideshow {
         this.fullscreenHandlers = null;
     }
 
-    // Settings modal methods
+        // Settings modal methods - Clean implementation
     openSettingsModal() {
         this.elements.settingsModal.classList.add('active');
-        this.loadSettingsToForm();
+        this.syncSettingsToForm();
     }
 
     closeSettingsModal() {
         this.elements.settingsModal.classList.remove('active');
     }
 
-    loadSettingsToForm() {
-        // Update transition checkboxes
-        this.elements.transitionCheckboxes.forEach(checkbox => {
-            checkbox.checked = this.transitionTypes.includes(checkbox.value);
+    syncSettingsToForm() {
+        this.elements.transitionCheckboxes.forEach(cb => {
+            cb.checked = this.transitionTypes.includes(cb.value);
         });
         
         this.elements.fadeDuration.value = this.fadeDuration;
@@ -974,7 +879,6 @@ class PictureSlideshow {
         this.elements.kenBurnsDuration.disabled = !this.kenBurnsEnabled;
         this.elements.startFullscreenCheckbox.checked = this.startInFullscreen;
         
-        // Update settings modal sliders
         if (this.elements.speedSliderSettings) {
             this.elements.speedSliderSettings.value = this.slideSpeed / 1000;
             this.elements.speedValueSettings.textContent = `${this.slideSpeed / 1000}s`;
@@ -988,7 +892,6 @@ class PictureSlideshow {
         const settings = {
             transitionTypes: this.transitionTypes,
             transitionType: this.transitionType,
-            randomTransitions: this.randomTransitions,
             fadeDuration: this.fadeDuration,
             kenBurnsEnabled: this.kenBurnsEnabled,
             kenBurnsType: this.kenBurnsType,
@@ -1006,40 +909,37 @@ class PictureSlideshow {
 
     loadSettings() {
         const stored = localStorage.getItem('slideshowSettings');
-        if (stored) {
-            try {
-                const settings = JSON.parse(stored);
-                this.transitionTypes = settings.transitionTypes || ['fade'];
-                this.transitionType = settings.transitionType || 'fade';
-                this.randomTransitions = settings.randomTransitions || false;
-                this.fadeDuration = settings.fadeDuration || 0.5;
-                this.kenBurnsEnabled = settings.kenBurnsEnabled || false;
-                this.kenBurnsType = settings.kenBurnsType || 'zoom';
-                this.kenBurnsDuration = settings.kenBurnsDuration || 10;
-                this.startInFullscreen = settings.startInFullscreen || false;
-                this.slideSpeed = settings.slideSpeed || 3000;
-                this.loop = settings.loop !== undefined ? settings.loop : true;
-                
-                // Update all UI elements
-                if (this.elements.speedSliderFooter) {
-                    this.elements.speedSliderFooter.value = this.slideSpeed / 1000;
-                    this.elements.speedValueFooter.textContent = `${this.slideSpeed / 1000}s`;
-                }
-                if (this.elements.loopCheckboxFooter) {
-                    this.elements.loopCheckboxFooter.checked = this.loop;
-                }
-                
-                this.updateCSSVariables();
-            } catch (error) {
-                console.error('Error loading settings:', error);
+        if (!stored) return;
+        
+        try {
+            const s = JSON.parse(stored);
+            this.transitionTypes = s.transitionTypes || ['fade'];
+            this.transitionType = s.transitionType || 'fade';
+            this.fadeDuration = s.fadeDuration || 0.5;
+            this.kenBurnsEnabled = s.kenBurnsEnabled || false;
+            this.kenBurnsType = s.kenBurnsType || 'zoom';
+            this.kenBurnsDuration = s.kenBurnsDuration || 10;
+            this.startInFullscreen = s.startInFullscreen || false;
+            this.slideSpeed = s.slideSpeed || 3000;
+            this.loop = s.loop !== undefined ? s.loop : true;
+            
+            if (this.elements.speedSliderFooter) {
+                this.elements.speedSliderFooter.value = this.slideSpeed / 1000;
+                this.elements.speedValueFooter.textContent = `${this.slideSpeed / 1000}s`;
             }
+            if (this.elements.loopCheckboxFooter) {
+                this.elements.loopCheckboxFooter.checked = this.loop;
+            }
+            
+            this.updateCSSVariables();
+        } catch (error) {
+            console.error('Error loading settings:', error);
         }
     }
 
     resetSettings() {
         this.transitionTypes = ['fade'];
         this.transitionType = 'fade';
-        this.randomTransitions = false;
         this.fadeDuration = 0.5;
         this.kenBurnsEnabled = false;
         this.kenBurnsType = 'zoom';
@@ -1048,11 +948,10 @@ class PictureSlideshow {
         this.slideSpeed = 3000;
         this.loop = true;
         
-        this.loadSettingsToForm();
+        this.syncSettingsToForm();
         this.saveSettings();
         this.applyKenBurnsEffect();
         
-        // Update footer elements
         if (this.elements.speedSliderFooter) {
             this.elements.speedSliderFooter.value = 3;
             this.elements.speedValueFooter.textContent = '3s';
@@ -1069,9 +968,7 @@ class PictureSlideshow {
 
     checkURLParameters() {
         const urlParams = new URLSearchParams(window.location.search);
-        const fullscreenParam = urlParams.get('fullscreen');
-        
-        if (fullscreenParam === 'true') {
+        if (urlParams.get('fullscreen') === 'true') {
             this.startInFullscreen = true;
         }
     }
