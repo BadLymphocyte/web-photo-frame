@@ -618,6 +618,10 @@ class PictureSlideshow {
         const transitions = {
             'fade': () => this.transitionFade(current, next),
             'dissolve': () => this.transitionDissolve(current, next),
+            'zoom-in': () => this.transitionZoomIn(current, next),
+            'zoom-out': () => this.transitionZoomOut(current, next),
+            'blur': () => this.transitionBlur(current, next),
+            'slide': () => this.transitionSlide(current, next),
             'wipe-left': () => this.transitionWipe(current, next, 'left'),
             'wipe-right': () => this.transitionWipe(current, next, 'right'),
             'wipe-up': () => this.transitionWipe(current, next, 'up'),
@@ -660,6 +664,78 @@ class PictureSlideshow {
             next.style.zIndex = '';
             this.completeTransition(current, next);
         }, this.fadeDuration * 1000);
+    }
+
+    transitionZoomIn(current, next) {
+        // Next image starts small and scales up
+        current.style.opacity = '1';
+        next.style.opacity = '0';
+        next.style.transform = 'translate(-50%, -50%) scale(0.5)';
+        
+        requestAnimationFrame(() => {
+            current.style.transition = `opacity ${this.fadeDuration}s ease-in-out`;
+            next.style.transition = `opacity ${this.fadeDuration}s ease-in-out, transform ${this.fadeDuration}s ease-in-out`;
+            current.style.opacity = '0';
+            next.style.opacity = '1';
+            next.style.transform = 'translate(-50%, -50%) scale(1)';
+        });
+        
+        setTimeout(() => this.completeTransition(current, next), this.fadeDuration * 1000);
+    }
+
+    transitionZoomOut(current, next) {
+        // Current image scales up and fades, next image appears underneath
+        current.style.opacity = '1';
+        current.style.transform = 'translate(-50%, -50%) scale(1)';
+        current.style.zIndex = '2';
+        next.style.opacity = '1';
+        next.style.zIndex = '1';
+        
+        requestAnimationFrame(() => {
+            current.style.transition = `opacity ${this.fadeDuration}s ease-in-out, transform ${this.fadeDuration}s ease-in-out`;
+            current.style.opacity = '0';
+            current.style.transform = 'translate(-50%, -50%) scale(1.5)';
+        });
+        
+        setTimeout(() => {
+            current.style.zIndex = '';
+            next.style.zIndex = '';
+            this.completeTransition(current, next);
+        }, this.fadeDuration * 1000);
+    }
+
+    transitionBlur(current, next) {
+        // Current image blurs out while next image blurs in
+        current.style.opacity = '1';
+        current.style.filter = 'blur(0px)';
+        next.style.opacity = '0';
+        next.style.filter = 'blur(20px)';
+        
+        requestAnimationFrame(() => {
+            current.style.transition = `opacity ${this.fadeDuration}s ease-in-out, filter ${this.fadeDuration}s ease-in-out`;
+            next.style.transition = `opacity ${this.fadeDuration}s ease-in-out, filter ${this.fadeDuration}s ease-in-out`;
+            current.style.opacity = '0';
+            current.style.filter = 'blur(20px)';
+            next.style.opacity = '1';
+            next.style.filter = 'blur(0px)';
+        });
+        
+        setTimeout(() => this.completeTransition(current, next), this.fadeDuration * 1000);
+    }
+
+    transitionSlide(current, next) {
+        // Next image pushes current image out to the left
+        current.style.transform = 'translate(-50%, -50%)';
+        next.style.transform = 'translate(-50%, -50%) translateX(100%)';
+        
+        requestAnimationFrame(() => {
+            current.style.transition = `transform ${this.fadeDuration}s ease-in-out`;
+            next.style.transition = `transform ${this.fadeDuration}s ease-in-out`;
+            current.style.transform = 'translate(-50%, -50%) translateX(-100%)';
+            next.style.transform = 'translate(-50%, -50%)';
+        });
+        
+        setTimeout(() => this.completeTransition(current, next), this.fadeDuration * 1000);
     }
 
     transitionWipe(current, next, direction) {
