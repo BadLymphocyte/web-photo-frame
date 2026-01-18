@@ -644,17 +644,17 @@ class PictureSlideshow {
 
     transitionWipe(current, next, direction) {
         const offsets = {
-            'left': 'translateX(100%)',
-            'right': 'translateX(-100%)',
-            'up': 'translateY(100%)',
-            'down': 'translateY(-100%)'
+            'left': 'translate(-50%, -50%) translateX(100%)',
+            'right': 'translate(-50%, -50%) translateX(-100%)',
+            'up': 'translate(-50%, -50%) translateY(100%)',
+            'down': 'translate(-50%, -50%) translateY(-100%)'
         };
         
         next.style.transform = offsets[direction];
         
         requestAnimationFrame(() => {
             next.style.transition = `transform ${this.fadeDuration}s ease-in-out`;
-            next.style.transform = 'translate(0, 0)';
+            next.style.transform = 'translate(-50%, -50%)';
         });
         
         setTimeout(() => this.completeTransition(current, next), this.fadeDuration * 1000);
@@ -666,14 +666,14 @@ class PictureSlideshow {
         
         current.style.transformStyle = 'preserve-3d';
         next.style.transformStyle = 'preserve-3d';
-        current.style.transform = 'rotateY(0deg)';
-        next.style.transform = 'rotateY(-90deg)';
+        current.style.transform = 'translate(-50%, -50%) rotateY(0deg)';
+        next.style.transform = 'translate(-50%, -50%) rotateY(-90deg)';
         
         requestAnimationFrame(() => {
             current.style.transition = `transform ${this.fadeDuration}s ease-in-out`;
             next.style.transition = `transform ${this.fadeDuration}s ease-in-out`;
-            current.style.transform = 'rotateY(90deg)';
-            next.style.transform = 'rotateY(0deg)';
+            current.style.transform = 'translate(-50%, -50%) rotateY(90deg)';
+            next.style.transform = 'translate(-50%, -50%) rotateY(0deg)';
         });
         
         setTimeout(() => {
