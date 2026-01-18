@@ -504,6 +504,56 @@ class PictureSlideshow {
         }
     }
 
+    setupAutoHideControls() {
+        let hideTimeout;
+        const imageContainer = document.getElementById('imageContainer');
+        const controls = this.elements.controls;
+        
+        const showControls = () => {
+            if (controls && !this.isFullscreen) {
+                controls.style.opacity = '1';
+                controls.style.pointerEvents = 'auto';
+            }
+        };
+        
+        const hideControls = () => {
+            if (controls && !this.isFullscreen) {
+                controls.style.opacity = '0';
+                controls.style.pointerEvents = 'none';
+            }
+        };
+        
+        // Show controls on mouse movement over image container
+        if (imageContainer) {
+            imageContainer.addEventListener('mousemove', () => {
+                showControls();
+                clearTimeout(hideTimeout);
+                hideTimeout = setTimeout(hideControls, 3000);
+            });
+            
+            imageContainer.addEventListener('mouseleave', () => {
+                clearTimeout(hideTimeout);
+                hideTimeout = setTimeout(hideControls, 1000);
+            });
+        }
+        
+        // Keep controls visible when mouse is over them
+        if (controls) {
+            controls.addEventListener('mouseenter', () => {
+                showControls();
+                clearTimeout(hideTimeout);
+            });
+            
+            controls.addEventListener('mouseleave', () => {
+                clearTimeout(hideTimeout);
+                hideTimeout = setTimeout(hideControls, 1000);
+            });
+        }
+        
+        // Initially hide controls after 3 seconds
+        setTimeout(hideControls, 3000);
+    }
+
     applyTransition(imageUrl) {
         const transition = this.transitionTypes.length > 1 
             ? this.transitionTypes[Math.floor(Math.random() * this.transitionTypes.length)]
