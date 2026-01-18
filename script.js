@@ -11,14 +11,11 @@ class PictureSlideshow {
         // Transition and effect settings
         this.transitionType = 'fade';
         this.transitionTypes = ['fade']; // Array for multiple transition selection
-        this.randomTransitions = false; // Whether to use random transitions
         this.fadeDuration = 0.5;
-        this.kenBurnsEnabled = false;
-        this.kenBurnsType = 'zoom';
-        this.kenBurnsDuration = 10;
         this.isFullscreen = false;
         this.startInFullscreen = false;
         this.isTransitioning = false;
+        this.randomOrder = false; // Display images in random order
         
         // Check URL parameters
         this.checkURLParameters();
@@ -60,17 +57,13 @@ class PictureSlideshow {
             closeSettingsBtn: document.getElementById('closeSettingsBtn'),
             transitionType: document.getElementById('transitionType'),
             transitionCheckboxes: document.querySelectorAll('.transition-checkbox'),
-            randomTransitions: document.getElementById('randomTransitions'),
             fadeDuration: document.getElementById('fadeDuration'),
             fadeDurationValue: document.getElementById('fadeDurationValue'),
-            kenBurnsEnabled: document.getElementById('kenBurnsEnabled'),
-            kenBurnsType: document.getElementById('kenBurnsType'),
-            kenBurnsDuration: document.getElementById('kenBurnsDuration'),
-            kenBurnsDurationValue: document.getElementById('kenBurnsDurationValue'),
             speedSliderSettings: document.getElementById('modalSpeedSlider'),
             speedValueSettings: document.getElementById('modalSpeedValue'),
             loopCheckboxSettings: document.getElementById('modalLoopCheckbox'),
             startFullscreenCheckbox: document.getElementById('startFullscreenCheckbox'),
+            randomOrderCheckbox: document.getElementById('randomOrderCheckbox'),
             saveSettingsBtn: document.getElementById('saveSettingsBtn'),
             resetSettingsBtn: document.getElementById('resetSettingsBtn'),
             // Fullscreen
@@ -155,54 +148,34 @@ class PictureSlideshow {
             this.updateCSSVariables();
         });
 
-        this.elements.kenBurnsEnabled.addEventListener('change', (e) => {
-            this.kenBurnsEnabled = e.target.checked;
-            this.elements.kenBurnsType.disabled = !this.kenBurnsEnabled;
-            this.elements.kenBurnsDuration.disabled = !this.kenBurnsEnabled;
-            this.applyKenBurnsEffect();
+        this.elements.speedSliderSettings.addEventListener('input', (e) => {
+            this.slideSpeed = e.target.value * 1000;
+            this.elements.speedValueSettings.textContent = `${e.target.value}s`;
+            // Also update footer slider
+            if (this.elements.speedSliderFooter) {
+                this.elements.speedSliderFooter.value = e.target.value;
+                this.elements.speedValueFooter.textContent = `${e.target.value}s`;
+            }
+            if (this.isPlaying) {
+                this.stopSlideshow();
+                this.startSlideshow();
+            }
         });
 
-        this.elements.kenBurnsType.addEventListener('change', (e) => {
-            this.kenBurnsType = e.target.value;
-            this.applyKenBurnsEffect();
+        this.elements.loopCheckboxSettings.addEventListener('change', (e) => {
+            this.loop = e.target.checked;
+            // Also update footer checkbox
+            if (this.elements.loopCheckboxFooter) {
+                this.elements.loopCheckboxFooter.checked = e.target.checked;
+            }
         });
-
-        this.elements.kenBurnsDuration.addEventListener('input', (e) => {
-            this.kenBurnsDuration = parseInt(e.target.value);
-            this.elements.kenBurnsDurationValue.textContent = `${this.kenBurnsDuration}s`;
-            this.updateCSSVariables();
-        });
-
-        // Settings modal speed slider
-        if (this.elements.speedSliderSettings) {
-            this.elements.speedSliderSettings.addEventListener('input', (e) => {
-                this.slideSpeed = e.target.value * 1000;
-                this.elements.speedValueSettings.textContent = `${e.target.value}s`;
-                // Also update footer slider
-                if (this.elements.speedSliderFooter) {
-                    this.elements.speedSliderFooter.value = e.target.value;
-                    this.elements.speedValueFooter.textContent = `${e.target.value}s`;
-                }
-                if (this.isPlaying) {
-                    this.stopSlideshow();
-                    this.startSlideshow();
-                }
-            });
-        }
-
-        // Settings modal loop checkbox
-        if (this.elements.loopCheckboxSettings) {
-            this.elements.loopCheckboxSettings.addEventListener('change', (e) => {
-                this.loop = e.target.checked;
-                // Also update footer checkbox
-                if (this.elements.loopCheckboxFooter) {
-                    this.elements.loopCheckboxFooter.checked = e.target.checked;
-                }
-            });
-        }
 
         this.elements.startFullscreenCheckbox.addEventListener('change', (e) => {
             this.startInFullscreen = e.target.checked;
+        });
+
+        this.elements.randomOrderCheckbox.addEventListener('change', (e) => {
+            this.randomOrder = e.target.checked;
         });
 
         this.elements.saveSettingsBtn.addEventListener('click', () => {
@@ -367,6 +340,12 @@ class PictureSlideshow {
     createThumbnails() {
         this.elements.thumbnailContainer.innerHTML = '';
         
+        // For large libraries, only render visible thumbnails
+        if (this.images.length > 100) {
+            this.elements.thumbnailContainer.innerHTML = `<p class="text-gray-400 text-sm">${this.images.length} images loaded. Thumbnails hidden for performance.</p>`;
+            return;
+        }
+        
         this.images.forEach((image, index) => {
             const thumbnail = document.createElement('div');
             thumbnail.className = `thumbnail cursor-pointer rounded overflow-hidden bg-gray-700 ${index === this.currentIndex ? 'ring-2 ring-blue-500' : ''}`;
@@ -386,6 +365,8 @@ class PictureSlideshow {
     }
 
     updateThumbnailSelection() {
+        if (this.images.length > 100) return; // Skip for large libraries
+        
         const thumbnails = this.elements.thumbnailContainer.querySelectorAll('.thumbnail');
         thumbnails.forEach((thumb, index) => {
             if (index === this.currentIndex) {
@@ -413,7 +394,6 @@ class PictureSlideshow {
             this.elements.controls.classList.remove('hidden');
             this.elements.imageCounter.classList.remove('hidden');
             this.isTransitioning = false;
-            this.applyKenBurnsEffect();
         }
         
         this.elements.currentIndex.textContent = this.currentIndex + 1;
@@ -425,9 +405,13 @@ class PictureSlideshow {
     previousImage() {
         if (this.images.length === 0 || this.isTransitioning) return;
         
-        this.currentIndex = this.currentIndex === 0 
-            ? this.loop ? this.images.length - 1 : 0
-            : this.currentIndex - 1;
+        if (this.randomOrder) {
+            this.currentIndex = Math.floor(Math.random() * this.images.length);
+        } else {
+            this.currentIndex = this.currentIndex === 0 
+                ? this.loop ? this.images.length - 1 : 0
+                : this.currentIndex - 1;
+        }
         
         this.showCurrentImage();
     }
@@ -435,9 +419,13 @@ class PictureSlideshow {
     nextImage() {
         if (this.images.length === 0 || this.isTransitioning) return;
         
-        this.currentIndex = this.currentIndex === this.images.length - 1 
-            ? this.loop ? 0 : this.images.length - 1
-            : this.currentIndex + 1;
+        if (this.randomOrder) {
+            this.currentIndex = Math.floor(Math.random() * this.images.length);
+        } else {
+            this.currentIndex = this.currentIndex === this.images.length - 1 
+                ? this.loop ? 0 : this.images.length - 1
+                : this.currentIndex + 1;
+        }
         
         this.showCurrentImage();
     }
@@ -516,65 +504,6 @@ class PictureSlideshow {
         }
     }
 
-    getRandomTransition() {
-        if (this.transitionTypes.length === 1) {
-            return this.transitionTypes[0];
-        }
-        const randomIndex = Math.floor(Math.random() * this.transitionTypes.length);
-        return this.transitionTypes[randomIndex];
-    }
-
-    setupAutoHideControls() {
-        let hideTimeout;
-        const imageContainer = document.getElementById('imageContainer');
-        const controls = this.elements.controls;
-        
-        const showControls = () => {
-            if (controls && !this.isFullscreen) {
-                controls.style.opacity = '1';
-                controls.style.pointerEvents = 'auto';
-            }
-        };
-        
-        const hideControls = () => {
-            if (controls && !this.isFullscreen) {
-                controls.style.opacity = '0';
-                controls.style.pointerEvents = 'none';
-            }
-        };
-        
-        // Show controls on mouse movement over image container
-        if (imageContainer) {
-            imageContainer.addEventListener('mousemove', () => {
-                showControls();
-                clearTimeout(hideTimeout);
-                hideTimeout = setTimeout(hideControls, 3000);
-            });
-            
-            imageContainer.addEventListener('mouseleave', () => {
-                clearTimeout(hideTimeout);
-                hideTimeout = setTimeout(hideControls, 1000);
-            });
-        }
-        
-        // Keep controls visible when mouse is over them
-        if (controls) {
-            controls.addEventListener('mouseenter', () => {
-                showControls();
-                clearTimeout(hideTimeout);
-            });
-            
-            controls.addEventListener('mouseleave', () => {
-                clearTimeout(hideTimeout);
-                hideTimeout = setTimeout(hideControls, 1000);
-            });
-        }
-        
-        // Initially hide controls after 3 seconds
-        setTimeout(hideControls, 3000);
-    }
-
-      // Transition methods - Clean implementation
     applyTransition(imageUrl) {
         const transition = this.transitionTypes.length > 1 
             ? this.transitionTypes[Math.floor(Math.random() * this.transitionTypes.length)]
@@ -587,7 +516,6 @@ class PictureSlideshow {
         const current = this.elements.currentImage;
         const next = this.elements.nextImage;
         
-        current.classList.remove('ken-burns', 'ken-burns-pan');
         next.src = imageUrl;
         next.classList.remove('hidden');
         
@@ -669,7 +597,6 @@ class PictureSlideshow {
         next.classList.add('hidden');
         next.style.cssText = '';
         this.isTransitioning = false;
-        this.applyKenBurnsEffect();
     }
 
     // Fullscreen methods - Simple implementation
@@ -854,7 +781,7 @@ class PictureSlideshow {
         this.fullscreenHandlers = null;
     }
 
-        // Settings modal methods - Clean implementation
+    // Settings modal methods - Clean implementation
     openSettingsModal() {
         this.elements.settingsModal.classList.add('active');
         this.syncSettingsToForm();
@@ -871,13 +798,8 @@ class PictureSlideshow {
         
         this.elements.fadeDuration.value = this.fadeDuration;
         this.elements.fadeDurationValue.textContent = `${this.fadeDuration}s`;
-        this.elements.kenBurnsEnabled.checked = this.kenBurnsEnabled;
-        this.elements.kenBurnsType.value = this.kenBurnsType;
-        this.elements.kenBurnsDuration.value = this.kenBurnsDuration;
-        this.elements.kenBurnsDurationValue.textContent = `${this.kenBurnsDuration}s`;
-        this.elements.kenBurnsType.disabled = !this.kenBurnsEnabled;
-        this.elements.kenBurnsDuration.disabled = !this.kenBurnsEnabled;
         this.elements.startFullscreenCheckbox.checked = this.startInFullscreen;
+        this.elements.randomOrderCheckbox.checked = this.randomOrder;
         
         if (this.elements.speedSliderSettings) {
             this.elements.speedSliderSettings.value = this.slideSpeed / 1000;
@@ -893,17 +815,14 @@ class PictureSlideshow {
             transitionTypes: this.transitionTypes,
             transitionType: this.transitionType,
             fadeDuration: this.fadeDuration,
-            kenBurnsEnabled: this.kenBurnsEnabled,
-            kenBurnsType: this.kenBurnsType,
-            kenBurnsDuration: this.kenBurnsDuration,
             startInFullscreen: this.startInFullscreen,
             slideSpeed: this.slideSpeed,
-            loop: this.loop
+            loop: this.loop,
+            randomOrder: this.randomOrder
         };
         
         localStorage.setItem('slideshowSettings', JSON.stringify(settings));
         this.updateCSSVariables();
-        this.applyKenBurnsEffect();
         this.showNotification('Settings saved', 'success');
     }
 
@@ -916,12 +835,10 @@ class PictureSlideshow {
             this.transitionTypes = s.transitionTypes || ['fade'];
             this.transitionType = s.transitionType || 'fade';
             this.fadeDuration = s.fadeDuration || 0.5;
-            this.kenBurnsEnabled = s.kenBurnsEnabled || false;
-            this.kenBurnsType = s.kenBurnsType || 'zoom';
-            this.kenBurnsDuration = s.kenBurnsDuration || 10;
             this.startInFullscreen = s.startInFullscreen || false;
             this.slideSpeed = s.slideSpeed || 3000;
             this.loop = s.loop !== undefined ? s.loop : true;
+            this.randomOrder = s.randomOrder || false;
             
             if (this.elements.speedSliderFooter) {
                 this.elements.speedSliderFooter.value = this.slideSpeed / 1000;
@@ -941,16 +858,13 @@ class PictureSlideshow {
         this.transitionTypes = ['fade'];
         this.transitionType = 'fade';
         this.fadeDuration = 0.5;
-        this.kenBurnsEnabled = false;
-        this.kenBurnsType = 'zoom';
-        this.kenBurnsDuration = 10;
         this.startInFullscreen = false;
         this.slideSpeed = 3000;
         this.loop = true;
+        this.randomOrder = false;
         
         this.syncSettingsToForm();
         this.saveSettings();
-        this.applyKenBurnsEffect();
         
         if (this.elements.speedSliderFooter) {
             this.elements.speedSliderFooter.value = 3;
@@ -963,7 +877,6 @@ class PictureSlideshow {
 
     updateCSSVariables() {
         document.documentElement.style.setProperty('--fade-duration', `${this.fadeDuration}s`);
-        document.documentElement.style.setProperty('--ken-burns-duration', `${this.kenBurnsDuration}s`);
     }
 
     checkURLParameters() {

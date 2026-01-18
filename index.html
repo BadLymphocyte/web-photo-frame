@@ -62,32 +62,6 @@
             perspective: 1000px;
         }
         
-        .ken-burns {
-            animation: kenBurns var(--ken-burns-duration) ease-in-out infinite alternate;
-        }
-        
-        @keyframes kenBurns {
-            0% { 
-                transform: translate(-50%, -50%) scale(1);
-            }
-            100% { 
-                transform: translate(-50%, -50%) scale(1.2);
-            }
-        }
-        
-        .ken-burns-pan {
-            animation: kenBurnsPan var(--ken-burns-duration) ease-in-out infinite alternate;
-        }
-        
-        @keyframes kenBurnsPan {
-            0% { 
-                transform: translate(-50%, -50%) scale(1.1) translate(-10%, -10%);
-            }
-            100% { 
-                transform: translate(-50%, -50%) scale(1.1) translate(10%, 10%);
-            }
-        }
-        
         .thumbnail {
             transition: all 0.3s ease;
         }
@@ -119,7 +93,6 @@
         
         :root {
             --fade-duration: 0.5s;
-            --ken-burns-duration: 10s;
         }
         
         #controls {
@@ -271,10 +244,6 @@
                                     <input type="checkbox" class="transition-checkbox rounded" value="wipe-down">
                                     <span>Wipe Down</span>
                                 </label>
-                                <label class="flex items-center gap-2 cursor-pointer hover:bg-gray-500 p-2 rounded">
-                                    <input type="checkbox" class="transition-checkbox rounded" value="cube">
-                                    <span>Cube Rotate</span>
-                                </label>
                             </div>
                         </div>
                         
@@ -283,39 +252,6 @@
                                 <span>Transition Duration:</span>
                                 <input type="range" id="fadeDuration" min="0.1" max="2" step="0.1" value="0.5" class="flex-1">
                                 <span id="fadeDurationValue" class="w-12 text-right">0.5s</span>
-                            </label>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Ken Burns Settings -->
-                <div class="bg-gray-700 rounded-lg p-4">
-                    <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
-                        <i data-lucide="camera"></i>
-                        Ken Burns Effect
-                    </h3>
-                    
-                    <div class="space-y-4">
-                        <div>
-                            <label class="flex items-center gap-2">
-                                <input type="checkbox" id="kenBurnsEnabled" class="rounded">
-                                <span>Enable Ken Burns Effect</span>
-                            </label>
-                        </div>
-                        
-                        <div>
-                            <label class="block text-sm font-medium mb-2">Effect Type</label>
-                            <select id="kenBurnsType" class="w-full bg-gray-600 rounded-lg px-3 py-2" disabled>
-                                <option value="zoom">Zoom In/Out</option>
-                                <option value="pan">Pan</option>
-                            </select>
-                        </div>
-                        
-                        <div>
-                            <label class="flex items-center gap-2">
-                                <span>Effect Duration:</span>
-                                <input type="range" id="kenBurnsDuration" min="5" max="20" step="1" value="10" class="flex-1" disabled>
-                                <span id="kenBurnsDurationValue" class="w-12 text-right">10s</span>
                             </label>
                         </div>
                     </div>
@@ -348,6 +284,13 @@
                             <label class="flex items-center gap-2">
                                 <input type="checkbox" id="startFullscreenCheckbox" class="rounded">
                                 <span>Start in Fullscreen Mode</span>
+                            </label>
+                        </div>
+                        
+                        <div>
+                            <label class="flex items-center gap-2">
+                                <input type="checkbox" id="randomOrderCheckbox" class="rounded">
+                                <span>Random Order</span>
                             </label>
                         </div>
                     </div>
