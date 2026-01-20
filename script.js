@@ -684,6 +684,12 @@ class PictureSlideshow {
             next.classList.add('hidden');
             next.style.cssText = '';
             next.onerror = null; // Clean up error handler
+            
+            // Show controls and image counter
+            this.elements.noImagesMessage.classList.add('hidden');
+            this.elements.controls.classList.remove('hidden');
+            this.elements.imageCounter.classList.remove('hidden');
+            
             this.isTransitioning = false;
         } catch (error) {
             console.error('Transition completion error:', error);
