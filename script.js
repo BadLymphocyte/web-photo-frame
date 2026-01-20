@@ -42,7 +42,6 @@ class PictureSlideshow {
             prevBtn: document.getElementById('prevBtn'),
             nextBtn: document.getElementById('nextBtn'),
             playPauseBtn: document.getElementById('playPauseBtn'),
-            thumbnailContainer: document.getElementById('thumbnailContainer'),
             speedInputFooter: document.querySelector('footer #speedInput'),
             loopCheckboxFooter: document.querySelector('footer #loopCheckbox'),
             currentIndex: document.getElementById('currentIndex'),
@@ -255,7 +254,6 @@ class PictureSlideshow {
             }));
             
             this.updateUI();
-            this.createThumbnails();
             
             if (this.images.length > 0) {
                 if (this.currentIndex >= this.images.length || this.elements.currentImage.classList.contains('hidden')) {
@@ -291,46 +289,6 @@ class PictureSlideshow {
         return validTypes.includes(file.type) || isJXL;
     }
 
-    createThumbnails() {
-        this.elements.thumbnailContainer.innerHTML = '';
-        
-        // For large libraries, only render visible thumbnails
-        if (this.images.length > 100) {
-            this.elements.thumbnailContainer.innerHTML = `<p class="text-gray-400 text-sm">${this.images.length} images loaded. Thumbnails hidden for performance.</p>`;
-            return;
-        }
-        
-        this.images.forEach((image, index) => {
-            const thumbnail = document.createElement('div');
-            thumbnail.className = `thumbnail cursor-pointer rounded overflow-hidden bg-gray-700 ${index === this.currentIndex ? 'ring-2 ring-blue-500' : ''}`;
-            thumbnail.innerHTML = `
-                <img src="${image.url}" alt="${image.name}" class="w-full h-20 object-cover">
-            `;
-            
-            thumbnail.addEventListener('click', () => {
-                if (this.isTransitioning) return;
-                this.currentIndex = index;
-                this.showCurrentImage();
-                this.updateThumbnailSelection();
-            });
-            
-            this.elements.thumbnailContainer.appendChild(thumbnail);
-        });
-    }
-
-    updateThumbnailSelection() {
-        if (this.images.length > 100) return; // Skip for large libraries
-        
-        const thumbnails = this.elements.thumbnailContainer.querySelectorAll('.thumbnail');
-        thumbnails.forEach((thumb, index) => {
-            if (index === this.currentIndex) {
-                thumb.classList.add('ring-2', 'ring-blue-500');
-            } else {
-                thumb.classList.remove('ring-2', 'ring-blue-500');
-            }
-        });
-    }
-
     showCurrentImage() {
         if (this.images.length === 0 || this.isTransitioning) return;
 
@@ -356,8 +314,6 @@ class PictureSlideshow {
         
         this.elements.currentIndex.textContent = this.currentIndex + 1;
         this.elements.totalImages.textContent = this.images.length;
-        
-        this.updateThumbnailSelection();
     }
 
     previousImage() {
@@ -452,7 +408,6 @@ class PictureSlideshow {
             this.elements.noImagesMessage.classList.remove('hidden');
             this.elements.controls.classList.add('hidden');
             this.elements.imageCounter.classList.add('hidden');
-            this.elements.thumbnailContainer.innerHTML = '<p class="text-gray-400 text-sm">No images uploaded</p>';
         } else {
             this.elements.noImagesMessage.classList.add('hidden');
             this.elements.controls.classList.remove('hidden');

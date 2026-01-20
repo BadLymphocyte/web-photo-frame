@@ -128,9 +128,9 @@
     </header>
 
     <!-- Main Content -->
-    <main class="flex-1 container mx-auto p-4 flex flex-col lg:flex-row gap-4">
+    <main class="flex-1 container mx-auto p-4">
         <!-- Slideshow Area -->
-        <section class="flex-1 bg-gray-800 rounded-lg p-4 flex items-center justify-center relative">
+        <section class="h-full bg-gray-800 rounded-lg p-4 flex items-center justify-center relative">
             <div id="imageContainer" class="relative w-full h-full flex items-center justify-center transition-container">
                 <div id="noImagesMessage" class="text-center text-gray-400">
                     <i data-lucide="image-off" class="w-16 h-16 mx-auto mb-4"></i>
@@ -159,17 +159,6 @@
                 <span id="currentIndex">1</span> / <span id="totalImages">1</span>
             </div>
         </section>
-
-        <!-- Thumbnails Sidebar -->
-        <aside class="lg:w-64 bg-gray-800 rounded-lg p-4">
-            <h2 class="text-lg font-semibold mb-4 flex items-center gap-2">
-                <i data-lucide="grid"></i>
-                Thumbnails
-            </h2>
-            <div id="thumbnailContainer" class="grid grid-cols-2 lg:grid-cols-1 gap-2 max-h-96 overflow-y-auto">
-                <!-- Thumbnails will be added here dynamically -->
-            </div>
-        </aside>
     </main>
 
     <!-- Settings Panel (Footer) -->
