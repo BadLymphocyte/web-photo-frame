@@ -8,22 +8,27 @@ A modern browser-based picture slideshow application with smooth transitions and
 - **Multiple Formats**: Supports JPG, PNG, GIF, WebP, and JXL (JPEG XL) images
 - **Smooth Transitions**: Multiple transition types including:
   - Fade
+  - Dissolve
+  - Zoom In/Out
+  - Blur
+  - Slide
   - Wipe (Left, Right, Up, Down)
   - Cube Rotate
-  - Random transitions option
+  - Random transitions (select multiple)
+- **Auto-Start**: Slideshow begins automatically when page loads
 - **Slideshow Controls**: Play/pause, previous/next navigation
-- **Adjustable Speed**: Configurable slideshow timing (1-10 seconds)
-- **Thumbnail Navigation**: Visual thumbnail grid for quick image selection
+- **Adjustable Speed**: Configurable slideshow timing (3-600 seconds)
 - **Keyboard Shortcuts**: 
   - Arrow keys for navigation
   - Spacebar for play/pause
   - F key for fullscreen
   - Escape to exit fullscreen/close settings
-- **Ken Burns Effect**: Optional zoom and pan effects
-- **Fullscreen Mode**: Immersive viewing with auto-hiding controls
-- **Drag & Drop**: Support for dragging images directly into the app
+- **Fullscreen Mode**: Immersive viewing with auto-hiding controls and hidden image counter
+- **Random Order**: Optional random image display with anti-repeat logic
 - **Loop Mode**: Optional looping of slideshow
+- **Settings Persistence**: All settings saved to browser localStorage
 - **Docker Support**: Runs in Linux containers with volume persistence
+- **Watchtower Compatible**: Can be excluded from automatic updates
 
 ## Quick Start
 
@@ -69,12 +74,16 @@ A modern browser-based picture slideshow application with smooth transitions and
 
 ### Adding Images
 
-1. **Upload Button**: Click the "Upload Images" button to select files
-2. **Drag & Drop**: Drag image files directly onto the page
-3. **Volume Mount**: Place images in the `images/` directory (when using Docker)
+Place images in the `images/` directory (or subdirectories). The app automatically scans for images on startup.
+
+**Supported methods:**
+- **Volume Mount**: Place images in the `./images` directory when using Docker
+- **Direct Copy**: Copy images to the images folder on the server
+- **Subdirectories**: Images in subdirectories are automatically discovered
 
 ### Navigation
 
+- **Auto-Start**: Slideshow begins automatically when page loads
 - **Previous/Next Buttons**: Use the control buttons at the bottom
 - **Keyboard**: 
   - `←` Arrow: Previous image
@@ -82,27 +91,33 @@ A modern browser-based picture slideshow application with smooth transitions and
   - `Space`: Play/Pause slideshow
   - `F`: Toggle fullscreen
   - `Escape`: Exit fullscreen or close settings
-- **Thumbnails**: Click any thumbnail to jump to that image
 
 ### Settings
 
-Access the settings modal to customize:
+Click the settings button (⚙️) to access the settings modal:
 
-- **Transitions**: Choose one or multiple transition types
-  - Enable random transitions to mix them up
-  - Adjust transition duration (0.1-2 seconds)
-- **Ken Burns Effect**: Add cinematic zoom or pan effects
-  - Zoom: Gradual zoom in/out
-  - Pan: Smooth panning motion
-  - Adjustable duration (5-20 seconds)
-- **Slideshow**: 
-  - Display speed (1-10 seconds per image)
-  - Loop mode on/off
-  - Start in fullscreen option
+**Slideshow Settings:**
+- **Display Time**: 3-600 seconds per image
+- **Loop**: Enable/disable continuous looping
+- **Random Order**: Shuffle images with anti-repeat logic
+- **Start in Fullscreen**: Auto-enter fullscreen on page load
+
+**Transition Settings:**
+- **Duration**: 0.1-2.0 seconds
+- **Effects**: Select one or multiple transition types:
+  - Fade, Dissolve, Zoom In/Out, Blur, Slide
+  - Wipe (Left/Right/Up/Down), Cube, None
+- **Random**: When multiple transitions selected, randomly picks one per image
+
+**Settings Persistence:**
+- All settings automatically saved to browser localStorage
+- Settings restored on page reload
+- Reset to defaults button available
 
 ### Fullscreen Mode
 
 - Click the fullscreen button or press `F` to enter fullscreen
+- Image counter automatically hidden in fullscreen
 - Controls auto-hide after 3 seconds of no mouse movement
 - Move mouse to show controls again
 - Controls remain visible when hovering over them
@@ -202,8 +217,13 @@ The application is structured for easy extension:
 
 5. **Transitions Not Smooth**
    - Reduce transition duration in settings
-   - Check if Ken Burns effect is interfering
-   - Try different transition types
+   - Try simpler transition types (fade, dissolve)
+   - Check browser performance and close other tabs
+
+6. **New Images Not Appearing**
+   - Restart the Docker container to rescan the images directory
+   - Verify images are in supported formats
+   - Check subdirectory permissions
 
 ### Logs
 
@@ -227,16 +247,17 @@ Tested and working on:
 ## Performance Tips
 
 - Use optimized images (not too large)
-- Disable Ken Burns effect for better performance on slower devices
 - Use faster transition speeds for smoother experience
-- Limit the number of images loaded at once
+- Reduce transition duration for better performance on slower devices
+- Consider using simpler transitions (fade, dissolve) on older hardware
+- Images are loaded on-demand to minimize memory usage
 
 ## Known Limitations
 
 - JXL files require browser with native JXL support enabled
 - Not all browsers support JXL format natively
-- Browser storage APIs not available in the Claude.ai environment
-- Maximum file upload size depends on server configuration
+- Settings stored in browser localStorage (cleared if browser data is cleared)
+- Image scanning happens on server startup (restart to detect new images)
 
 ## License
 
@@ -260,7 +281,25 @@ For issues and questions:
 
 ## Changelog
 
-### v1.1 (Current)
+### v2.0 (Current)
+- **Settings System Rewrite**: Complete overhaul for reliability and maintainability
+  - New form-based settings modal with better UX
+  - Proper FormData API usage for data handling
+  - Improved error handling and validation
+  - Settings persistence with localStorage
+  - Cancel button to discard changes
+- **Auto-Start Feature**: Slideshow begins automatically on page load
+- **UI Improvements**:
+  - Removed thumbnail panel for cleaner interface
+  - Image counter hidden in fullscreen mode
+  - Speed setting now text input (3-600 seconds range)
+- **New Transitions**: Added dissolve, zoom in/out, blur effects
+- **Random Order**: Shuffle images with anti-repeat logic
+- **Server-Side Image Scanning**: Automatic recursive directory scanning
+- **Watchtower Support**: Container can be excluded from auto-updates
+- **Bug Fixes**: Fixed image display issues, layout problems, and control visibility
+
+### v1.1
 - Fixed fullscreen display issues
 - Replaced multi-select with checkboxes for transitions
 - Added random transition support
@@ -274,5 +313,4 @@ For issues and questions:
 - Initial release
 - Basic slideshow functionality
 - Multiple transition types
-- Ken Burns effects
 - Docker support
