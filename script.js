@@ -195,6 +195,9 @@ class PictureSlideshow {
                     this.currentIndex = 0;
                     this.showCurrentImage();
                 }
+                
+                // Automatically start the slideshow
+                this.startSlideshow();
             }
         } catch (error) {
             console.error('Error loading images from server:', error);
