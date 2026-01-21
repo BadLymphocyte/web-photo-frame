@@ -50,17 +50,11 @@ class PictureSlideshow {
             // Settings modal elements
             settingsBtn: document.getElementById('settingsBtn'),
             settingsModal: document.getElementById('settingsModal'),
+            settingsForm: document.getElementById('settingsForm'),
             closeSettingsBtn: document.getElementById('closeSettingsBtn'),
-            transitionType: document.getElementById('transitionType'),
-            transitionCheckboxes: document.querySelectorAll('.transition-checkbox'),
-            fadeDuration: document.getElementById('fadeDuration'),
-            fadeDurationValue: document.getElementById('fadeDurationValue'),
-            speedInputSettings: document.getElementById('modalSpeedInput'),
-            loopCheckboxSettings: document.getElementById('modalLoopCheckbox'),
-            startFullscreenCheckbox: document.getElementById('startFullscreenCheckbox'),
-            randomOrderCheckbox: document.getElementById('randomOrderCheckbox'),
-            saveSettingsBtn: document.getElementById('saveSettingsBtn'),
+            cancelSettingsBtn: document.getElementById('cancelSettingsBtn'),
             resetSettingsBtn: document.getElementById('resetSettingsBtn'),
+            transitionDurationValue: document.getElementById('transitionDurationValue'),
             // Fullscreen
             fullscreenBtn: document.getElementById('fullscreenBtn')
         };
@@ -97,93 +91,34 @@ class PictureSlideshow {
             });
         }
 
-        if (this.elements.loopCheckboxFooter) {
-            this.elements.loopCheckboxFooter.addEventListener('change', (e) => {
-                this.loop = e.target.checked;
-            });
+        // Settings modal event listeners - NEW FORM-BASED APPROACH
+        this.elements.settingsBtn.addEventListener('click', () => this.openSettings());
+        this.elements.closeSettingsBtn.addEventListener('click', () => this.closeSettings());
+        
+        if (this.elements.cancelSettingsBtn) {
+            this.elements.cancelSettingsBtn.addEventListener('click', () => this.closeSettings());
         }
-
-        // Settings modal event listeners
-        this.elements.settingsBtn.addEventListener('click', () => {
-            this.openSettingsModal();
-        });
-
-        this.elements.closeSettingsBtn.addEventListener('click', () => {
-            this.closeSettingsModal();
-        });
-
+        
+        this.elements.resetSettingsBtn.addEventListener('click', () => this.resetSettings());
+        
         this.elements.settingsModal.addEventListener('click', (e) => {
             if (e.target === this.elements.settingsModal) {
-                this.closeSettingsModal();
+                this.closeSettings();
             }
         });
-
-        this.elements.transitionCheckboxes.forEach(checkbox => {
-            checkbox.addEventListener('change', () => {
-                this.updateTransitionTypes();
-            });
+        
+        this.elements.settingsForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.saveSettings();
         });
-
-        // Select All Transitions button
-        const selectAllBtn = document.getElementById('selectAllTransitions');
-        if (selectAllBtn) {
-            selectAllBtn.addEventListener('click', () => {
-                this.elements.transitionCheckboxes.forEach(checkbox => {
-                    checkbox.checked = true;
-                });
-                this.updateTransitionTypes();
+        
+        // Update transition duration display
+        const transitionDurationInput = this.elements.settingsForm.querySelector('[name="transitionDuration"]');
+        if (transitionDurationInput) {
+            transitionDurationInput.addEventListener('input', (e) => {
+                this.elements.transitionDurationValue.textContent = `${e.target.value}s`;
             });
         }
-
-        this.elements.fadeDuration.addEventListener('input', (e) => {
-            this.fadeDuration = parseFloat(e.target.value);
-            this.elements.fadeDurationValue.textContent = `${this.fadeDuration}s`;
-            this.updateCSSVariables();
-        });
-
-        this.elements.speedInputSettings.addEventListener('change', (e) => {
-            let value = parseInt(e.target.value);
-            if (isNaN(value) || value < 3) {
-                value = 3;
-            } else if (value > 600) {
-                value = 600;
-            }
-            e.target.value = value;
-            this.slideSpeed = value * 1000;
-            // Also update footer input
-            if (this.elements.speedInputFooter) {
-                this.elements.speedInputFooter.value = value;
-            }
-            if (this.isPlaying) {
-                this.stopSlideshow();
-                this.startSlideshow();
-            }
-        });
-
-        this.elements.loopCheckboxSettings.addEventListener('change', (e) => {
-            this.loop = e.target.checked;
-            // Also update footer checkbox
-            if (this.elements.loopCheckboxFooter) {
-                this.elements.loopCheckboxFooter.checked = e.target.checked;
-            }
-        });
-
-        this.elements.startFullscreenCheckbox.addEventListener('change', (e) => {
-            this.startInFullscreen = e.target.checked;
-        });
-
-        this.elements.randomOrderCheckbox.addEventListener('change', (e) => {
-            this.randomOrder = e.target.checked;
-        });
-
-        this.elements.saveSettingsBtn.addEventListener('click', () => {
-            this.saveSettings();
-            this.closeSettingsModal();
-        });
-
-        this.elements.resetSettingsBtn.addEventListener('click', () => {
-            this.resetSettings();
-        });
 
         // Fullscreen event listener
         this.elements.fullscreenBtn.addEventListener('click', () => {
@@ -201,7 +136,7 @@ class PictureSlideshow {
             // Don't handle if settings modal is open
             if (this.elements.settingsModal.classList.contains('active')) {
                 if (e.key === 'Escape') {
-                    this.closeSettingsModal();
+                    this.closeSettings();
                 }
                 return;
             }
@@ -415,25 +350,6 @@ class PictureSlideshow {
             
             this.elements.currentIndex.textContent = this.currentIndex + 1;
             this.elements.totalImages.textContent = this.images.length;
-        }
-    }
-
-    // Helper methods for transition management
-    updateTransitionTypes() {
-        const checkedBoxes = Array.from(this.elements.transitionCheckboxes)
-            .filter(cb => cb.checked)
-            .map(cb => cb.value);
-        
-        if (checkedBoxes.length > 0) {
-            this.transitionTypes = checkedBoxes;
-            // Set current transition to first selected if current is not in list
-            if (!this.transitionTypes.includes(this.transitionType)) {
-                this.transitionType = this.transitionTypes[0];
-            }
-        } else {
-            // If nothing selected, default to 'none'
-            this.transitionTypes = ['none'];
-            this.transitionType = 'none';
         }
     }
 
@@ -899,66 +815,113 @@ class PictureSlideshow {
         this.fullscreenHandlers = null;
     }
 
-    // Settings modal methods - Clean implementation
-    openSettingsModal() {
-        this.elements.settingsModal.classList.add('active');
-        this.syncSettingsToForm();
+    // Settings Management - New reliable form-based implementation
+    getDefaultSettings() {
+        return {
+            slideSpeed: 3,
+            loop: true,
+            randomOrder: false,
+            startFullscreen: false,
+            transitionDuration: 0.5,
+            transitions: ['fade']
+        };
     }
-
-    closeSettingsModal() {
+    
+    openSettings() {
+        this.populateSettingsForm();
+        this.elements.settingsModal.classList.add('active');
+        lucide.createIcons();
+    }
+    
+    closeSettings() {
         this.elements.settingsModal.classList.remove('active');
     }
-
-    syncSettingsToForm() {
-        this.elements.transitionCheckboxes.forEach(cb => {
+    
+    populateSettingsForm() {
+        const form = this.elements.settingsForm;
+        
+        form.querySelector('[name="slideSpeed"]').value = this.slideSpeed / 1000;
+        form.querySelector('[name="loop"]').checked = this.loop;
+        form.querySelector('[name="randomOrder"]').checked = this.randomOrder;
+        form.querySelector('[name="startFullscreen"]').checked = this.startInFullscreen;
+        
+        const durationInput = form.querySelector('[name="transitionDuration"]');
+        durationInput.value = this.fadeDuration;
+        this.elements.transitionDurationValue.textContent = `${this.fadeDuration}s`;
+        
+        const transitionCheckboxes = form.querySelectorAll('[name="transitions"]');
+        transitionCheckboxes.forEach(cb => {
             cb.checked = this.transitionTypes.includes(cb.value);
         });
-        
-        this.elements.fadeDuration.value = this.fadeDuration;
-        this.elements.fadeDurationValue.textContent = `${this.fadeDuration}s`;
-        this.elements.startFullscreenCheckbox.checked = this.startInFullscreen;
-        this.elements.randomOrderCheckbox.checked = this.randomOrder;
-        
-        if (this.elements.speedInputSettings) {
-            this.elements.speedInputSettings.value = this.slideSpeed / 1000;
-        }
-        if (this.elements.speedInputFooter) {
-            this.elements.speedInputFooter.value = this.slideSpeed / 1000;
-        }
-        if (this.elements.loopCheckboxSettings) {
-            this.elements.loopCheckboxSettings.checked = this.loop;
-        }
     }
-
+    
     saveSettings() {
+        const form = this.elements.settingsForm;
+        const formData = new FormData(form);
+        
+        let slideSpeed = parseInt(formData.get('slideSpeed'));
+        if (isNaN(slideSpeed) || slideSpeed < 3) slideSpeed = 3;
+        if (slideSpeed > 600) slideSpeed = 600;
+        this.slideSpeed = slideSpeed * 1000;
+        
+        this.loop = formData.get('loop') === 'on';
+        this.randomOrder = formData.get('randomOrder') === 'on';
+        this.startInFullscreen = formData.get('startFullscreen') === 'on';
+        this.fadeDuration = parseFloat(formData.get('transitionDuration')) || 0.5;
+        
+        const selectedTransitions = formData.getAll('transitions');
+        this.transitionTypes = selectedTransitions.length > 0 ? selectedTransitions : ['fade'];
+        this.transitionType = this.transitionTypes[0];
+        
+        if (this.elements.speedInputFooter) {
+            this.elements.speedInputFooter.value = slideSpeed;
+        }
+        if (this.elements.loopCheckboxFooter) {
+            this.elements.loopCheckboxFooter.checked = this.loop;
+        }
+        
         const settings = {
-            transitionTypes: this.transitionTypes,
-            transitionType: this.transitionType,
-            fadeDuration: this.fadeDuration,
-            startInFullscreen: this.startInFullscreen,
             slideSpeed: this.slideSpeed,
             loop: this.loop,
-            randomOrder: this.randomOrder
+            randomOrder: this.randomOrder,
+            startFullscreen: this.startInFullscreen,
+            transitionDuration: this.fadeDuration,
+            transitions: this.transitionTypes
         };
         
-        localStorage.setItem('slideshowSettings', JSON.stringify(settings));
-        this.updateCSSVariables();
-        this.showNotification('Settings saved', 'success');
-    }
-
-    loadSettings() {
-        const stored = localStorage.getItem('slideshowSettings');
-        if (!stored) return;
-        
         try {
-            const s = JSON.parse(stored);
-            this.transitionTypes = s.transitionTypes || ['fade'];
-            this.transitionType = s.transitionType || 'fade';
-            this.fadeDuration = s.fadeDuration || 0.5;
-            this.startInFullscreen = s.startInFullscreen || false;
-            this.slideSpeed = s.slideSpeed || 3000;
-            this.loop = s.loop !== undefined ? s.loop : true;
-            this.randomOrder = s.randomOrder || false;
+            localStorage.setItem('slideshowSettings', JSON.stringify(settings));
+            this.updateCSSVariables();
+            this.showNotification('Settings saved successfully', 'success');
+            this.closeSettings();
+            
+            if (this.isPlaying) {
+                this.stopSlideshow();
+                this.startSlideshow();
+            }
+        } catch (error) {
+            console.error('Error saving settings:', error);
+            this.showNotification('Error saving settings', 'error');
+        }
+    }
+    
+    loadSettings() {
+        try {
+            const stored = localStorage.getItem('slideshowSettings');
+            if (!stored) {
+                this.applyDefaultSettings();
+                return;
+            }
+            
+            const settings = JSON.parse(stored);
+            
+            this.slideSpeed = settings.slideSpeed || 3000;
+            this.loop = settings.loop !== undefined ? settings.loop : true;
+            this.randomOrder = settings.randomOrder || false;
+            this.startInFullscreen = settings.startFullscreen || false;
+            this.fadeDuration = settings.transitionDuration || 0.5;
+            this.transitionTypes = settings.transitions || ['fade'];
+            this.transitionType = this.transitionTypes[0];
             
             if (this.elements.speedInputFooter) {
                 this.elements.speedInputFooter.value = this.slideSpeed / 1000;
@@ -970,27 +933,54 @@ class PictureSlideshow {
             this.updateCSSVariables();
         } catch (error) {
             console.error('Error loading settings:', error);
+            this.applyDefaultSettings();
         }
     }
-
+    
+    applyDefaultSettings() {
+        const defaults = this.getDefaultSettings();
+        this.slideSpeed = defaults.slideSpeed * 1000;
+        this.loop = defaults.loop;
+        this.randomOrder = defaults.randomOrder;
+        this.startInFullscreen = defaults.startFullscreen;
+        this.fadeDuration = defaults.transitionDuration;
+        this.transitionTypes = defaults.transitions;
+        this.transitionType = this.transitionTypes[0];
+        this.updateCSSVariables();
+    }
+    
     resetSettings() {
-        this.transitionTypes = ['fade'];
-        this.transitionType = 'fade';
-        this.fadeDuration = 0.5;
-        this.startInFullscreen = false;
-        this.slideSpeed = 3000;
-        this.loop = true;
-        this.randomOrder = false;
+        const defaults = this.getDefaultSettings();
         
-        this.syncSettingsToForm();
-        this.saveSettings();
+        this.slideSpeed = defaults.slideSpeed * 1000;
+        this.loop = defaults.loop;
+        this.randomOrder = defaults.randomOrder;
+        this.startInFullscreen = defaults.startFullscreen;
+        this.fadeDuration = defaults.transitionDuration;
+        this.transitionTypes = defaults.transitions;
+        this.transitionType = this.transitionTypes[0];
+        
+        this.populateSettingsForm();
         
         if (this.elements.speedInputFooter) {
-            this.elements.speedInputFooter.value = 3;
+            this.elements.speedInputFooter.value = defaults.slideSpeed;
         }
         if (this.elements.loopCheckboxFooter) {
-            this.elements.loopCheckboxFooter.checked = true;
+            this.elements.loopCheckboxFooter.checked = defaults.loop;
         }
+        
+        const settings = {
+            slideSpeed: this.slideSpeed,
+            loop: this.loop,
+            randomOrder: this.randomOrder,
+            startFullscreen: this.startInFullscreen,
+            transitionDuration: this.fadeDuration,
+            transitions: this.transitionTypes
+        };
+        
+        localStorage.setItem('slideshowSettings', JSON.stringify(settings));
+        this.updateCSSVariables();
+        this.showNotification('Settings reset to defaults', 'success');
     }
 
     updateCSSVariables() {

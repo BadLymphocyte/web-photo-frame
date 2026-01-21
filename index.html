@@ -190,87 +190,14 @@
             <div class="flex items-center justify-between mb-6">
                 <h2 class="text-2xl font-bold flex items-center gap-2">
                     <i data-lucide="settings"></i>
-                    Slideshow Settings
+                    Settings
                 </h2>
                 <button id="closeSettingsBtn" class="p-2 hover:bg-gray-700 rounded-lg transition-colors">
                     <i data-lucide="x" class="w-6 h-6"></i>
                 </button>
             </div>
             
-            <div class="space-y-6">
-                <!-- Transition Settings -->
-                <div class="bg-gray-700 rounded-lg p-4">
-                    <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
-                        <i data-lucide="sparkles"></i>
-                        Transitions
-                    </h3>
-                    
-                    <div class="space-y-4">
-                        <div>
-                            <div class="flex items-center justify-between mb-2">
-                                <label class="block text-sm font-medium">Transition Types (select one or more)</label>
-                                <button id="selectAllTransitions" class="text-xs bg-blue-600 hover:bg-blue-700 px-2 py-1 rounded transition-colors">
-                                    Select All
-                                </button>
-                            </div>
-                            <div class="space-y-2 bg-gray-600 rounded-lg p-3">
-                                <label class="flex items-center gap-2 cursor-pointer hover:bg-gray-500 p-2 rounded">
-                                    <input type="checkbox" class="transition-checkbox rounded" value="fade" checked>
-                                    <span>Fade</span>
-                                </label>
-                                <label class="flex items-center gap-2 cursor-pointer hover:bg-gray-500 p-2 rounded">
-                                    <input type="checkbox" class="transition-checkbox rounded" value="dissolve">
-                                    <span>Dissolve</span>
-                                </label>
-                                <label class="flex items-center gap-2 cursor-pointer hover:bg-gray-500 p-2 rounded">
-                                    <input type="checkbox" class="transition-checkbox rounded" value="zoom-in">
-                                    <span>Zoom In</span>
-                                </label>
-                                <label class="flex items-center gap-2 cursor-pointer hover:bg-gray-500 p-2 rounded">
-                                    <input type="checkbox" class="transition-checkbox rounded" value="zoom-out">
-                                    <span>Zoom Out</span>
-                                </label>
-                                <label class="flex items-center gap-2 cursor-pointer hover:bg-gray-500 p-2 rounded">
-                                    <input type="checkbox" class="transition-checkbox rounded" value="blur">
-                                    <span>Blur</span>
-                                </label>
-                                <label class="flex items-center gap-2 cursor-pointer hover:bg-gray-500 p-2 rounded">
-                                    <input type="checkbox" class="transition-checkbox rounded" value="slide">
-                                    <span>Slide</span>
-                                </label>
-                                <label class="flex items-center gap-2 cursor-pointer hover:bg-gray-500 p-2 rounded">
-                                    <input type="checkbox" class="transition-checkbox rounded" value="wipe-left">
-                                    <span>Wipe Left</span>
-                                </label>
-                                <label class="flex items-center gap-2 cursor-pointer hover:bg-gray-500 p-2 rounded">
-                                    <input type="checkbox" class="transition-checkbox rounded" value="wipe-right">
-                                    <span>Wipe Right</span>
-                                </label>
-                                <label class="flex items-center gap-2 cursor-pointer hover:bg-gray-500 p-2 rounded">
-                                    <input type="checkbox" class="transition-checkbox rounded" value="wipe-up">
-                                    <span>Wipe Up</span>
-                                </label>
-                                <label class="flex items-center gap-2 cursor-pointer hover:bg-gray-500 p-2 rounded">
-                                    <input type="checkbox" class="transition-checkbox rounded" value="wipe-down">
-                                    <span>Wipe Down</span>
-                                </label>
-                                <label class="flex items-center gap-2 cursor-pointer hover:bg-gray-500 p-2 rounded">
-                                    <input type="checkbox" class="transition-checkbox rounded" value="cube">
-                                    <span>Cube</span>
-                                </label>
-                            </div>
-                        </div>
-                        
-                        <div>
-                            <label class="flex items-center gap-2">
-                                <span>Transition Duration:</span>
-                                <input type="range" id="fadeDuration" min="0.1" max="2" step="0.1" value="0.5" class="flex-1">
-                                <span id="fadeDurationValue" class="w-12 text-right">0.5s</span>
-                            </label>
-                        </div>
-                    </div>
-                </div>
-                
+            <form id="settingsForm" class="space-y-6">
                 <!-- Slideshow Settings -->
                 <div class="bg-gray-700 rounded-lg p-4">
                     <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
@@ -280,45 +207,122 @@
                     
                     <div class="space-y-4">
                         <div>
-                            <label class="flex items-center gap-2">
-                                <span>Display Time (seconds):</span>
-                                <input type="number" id="modalSpeedInput" min="3" max="600" value="3" class="w-24 px-2 py-1 bg-gray-600 border border-gray-500 rounded text-white">
-                                <span class="text-sm text-gray-400">(3-600)</span>
+                            <label class="block text-sm font-medium mb-2">Display Time (seconds)</label>
+                            <input type="number" name="slideSpeed" min="3" max="600" value="3" 
+                                   class="w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded text-white">
+                            <p class="text-xs text-gray-400 mt-1">Time to display each image (3-600 seconds)</p>
+                        </div>
+                        
+                        <div>
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" name="loop" checked class="rounded">
+                                <span>Loop slideshow continuously</span>
                             </label>
                         </div>
                         
                         <div>
-                            <label class="flex items-center gap-2">
-                                <input type="checkbox" id="modalLoopCheckbox" checked class="rounded">
-                                <span>Loop Slideshow</span>
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" name="randomOrder" class="rounded">
+                                <span>Show images in random order</span>
                             </label>
                         </div>
                         
                         <div>
-                            <label class="flex items-center gap-2">
-                                <input type="checkbox" id="startFullscreenCheckbox" class="rounded">
-                                <span>Start in Fullscreen Mode</span>
-                            </label>
-                        </div>
-                        
-                        <div>
-                            <label class="flex items-center gap-2">
-                                <input type="checkbox" id="randomOrderCheckbox" class="rounded">
-                                <span>Random Order</span>
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" name="startFullscreen" class="rounded">
+                                <span>Start in fullscreen mode</span>
                             </label>
                         </div>
                     </div>
                 </div>
-            </div>
-            
-            <div class="flex justify-end gap-3 mt-6">
-                <button id="resetSettingsBtn" class="px-4 py-2 bg-gray-600 hover:bg-gray-700 rounded-lg transition-colors">
-                    Reset to Defaults
-                </button>
-                <button id="saveSettingsBtn" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors">
-                    Save Settings
-                </button>
-            </div>
+                
+                <!-- Transition Settings -->
+                <div class="bg-gray-700 rounded-lg p-4">
+                    <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
+                        <i data-lucide="sparkles"></i>
+                        Transitions
+                    </h3>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Transition Duration (seconds)</label>
+                            <div class="flex items-center gap-3">
+                                <input type="range" name="transitionDuration" min="0.1" max="2" step="0.1" value="0.5" class="flex-1">
+                                <span id="transitionDurationValue" class="text-sm w-12 text-right">0.5s</span>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Transition Effects</label>
+                            <p class="text-xs text-gray-400 mb-3">Select one or more transition effects (random if multiple selected)</p>
+                            <div class="grid grid-cols-2 gap-2">
+                                <label class="flex items-center gap-2 cursor-pointer hover:bg-gray-600 p-2 rounded">
+                                    <input type="checkbox" name="transitions" value="fade" checked class="rounded">
+                                    <span class="text-sm">Fade</span>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer hover:bg-gray-600 p-2 rounded">
+                                    <input type="checkbox" name="transitions" value="dissolve" class="rounded">
+                                    <span class="text-sm">Dissolve</span>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer hover:bg-gray-600 p-2 rounded">
+                                    <input type="checkbox" name="transitions" value="zoom-in" class="rounded">
+                                    <span class="text-sm">Zoom In</span>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer hover:bg-gray-600 p-2 rounded">
+                                    <input type="checkbox" name="transitions" value="zoom-out" class="rounded">
+                                    <span class="text-sm">Zoom Out</span>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer hover:bg-gray-600 p-2 rounded">
+                                    <input type="checkbox" name="transitions" value="blur" class="rounded">
+                                    <span class="text-sm">Blur</span>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer hover:bg-gray-600 p-2 rounded">
+                                    <input type="checkbox" name="transitions" value="slide" class="rounded">
+                                    <span class="text-sm">Slide</span>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer hover:bg-gray-600 p-2 rounded">
+                                    <input type="checkbox" name="transitions" value="wipe-left" class="rounded">
+                                    <span class="text-sm">Wipe Left</span>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer hover:bg-gray-600 p-2 rounded">
+                                    <input type="checkbox" name="transitions" value="wipe-right" class="rounded">
+                                    <span class="text-sm">Wipe Right</span>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer hover:bg-gray-600 p-2 rounded">
+                                    <input type="checkbox" name="transitions" value="wipe-up" class="rounded">
+                                    <span class="text-sm">Wipe Up</span>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer hover:bg-gray-600 p-2 rounded">
+                                    <input type="checkbox" name="transitions" value="wipe-down" class="rounded">
+                                    <span class="text-sm">Wipe Down</span>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer hover:bg-gray-600 p-2 rounded">
+                                    <input type="checkbox" name="transitions" value="cube" class="rounded">
+                                    <span class="text-sm">Cube</span>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer hover:bg-gray-600 p-2 rounded">
+                                    <input type="checkbox" name="transitions" value="none" class="rounded">
+                                    <span class="text-sm">None</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex justify-between gap-3 pt-4 border-t border-gray-600">
+                    <button type="button" id="resetSettingsBtn" class="px-4 py-2 bg-gray-600 hover:bg-gray-700 rounded-lg transition-colors">
+                        Reset to Defaults
+                    </button>
+                    <div class="flex gap-3">
+                        <button type="button" id="cancelSettingsBtn" class="px-4 py-2 bg-gray-600 hover:bg-gray-700 rounded-lg transition-colors">
+                            Cancel
+                        </button>
+                        <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors">
+                            Save Settings
+                        </button>
+                    </div>
+                </div>
+            </form>
         </div>
     </div>
 
